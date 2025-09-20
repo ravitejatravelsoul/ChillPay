@@ -1,25 +1,37 @@
 import SwiftUI
 
-/// View used to create a brand new group.  The user can specify a group
-/// name and an arbitrary number of members.  On save the new group is
-/// appended to the `GroupViewModel`.
-struct AddGroupView: View {
+/// View used to edit an existing group's name and membership.  Members can
+/// be added or removed.  Removing a member will also remove any expenses
+/// that reference that user.
+struct EditGroupView: View {
     @Environment(\.presentationMode) private var presentationMode
     @ObservedObject var groupVM: GroupViewModel
+    var group: Group
     
-    @State private var name: String = ""
-    @State private var memberNames: [String] = [""]
-    @State private var isPublic: Bool = false
-    @State private var budgetString: String = ""
-
-    /// The currency selected for this group.  Default is US dollars.
-    @State private var selectedCurrency: Currency = .usd
-    /// The colour used to theme the group.  Values correspond to SwiftUI
-    /// colour names; see `color(for:)` in `ColorHelpers.swift` for mapping.
-    @State private var selectedColorName: String = "blue"
-    /// The SF Symbol representing the group.  A handful of suitable
-    /// symbols are offered to the user.
-    @State private var selectedIconName: String = "person.3.fill"
+    @State private var name: String
+    @State private var memberNames: [String]
+    @State private var isPublic: Bool
+    @State private var budgetString: String
+    @State private var selectedCurrency: Currency
+    @State private var selectedColorName: String
+    @State private var selectedIconName: String
+    
+    init(group: Group, groupVM: GroupViewModel) {
+        self.group = group
+        self.groupVM = groupVM
+        _name = State(initialValue: group.name)
+        let initialMembers = group.members.map { $0.name }
+        _memberNames = State(initialValue: initialMembers.isEmpty ? [""] : initialMembers)
+        _isPublic = State(initialValue: group.isPublic)
+        if let budget = group.budget {
+            _budgetString = State(initialValue: String(format: "%.2f", budget))
+        } else {
+            _budgetString = State(initialValue: "")
+        }
+        _selectedCurrency = State(initialValue: group.currency)
+        _selectedColorName = State(initialValue: group.colorName)
+        _selectedIconName = State(initialValue: group.iconName)
+    }
     
     var body: some View {
         NavigationView {
@@ -53,7 +65,6 @@ struct AddGroupView: View {
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
-                    // Appearance
                     VStack(alignment: .leading) {
                         Text("Colour")
                             .font(.subheadline)
@@ -94,7 +105,7 @@ struct AddGroupView: View {
                     }
                 }
             }
-            .navigationTitle("New Group")
+            .navigationTitle("Edit Group")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -112,27 +123,68 @@ struct AddGroupView: View {
         }
     }
     
-    /// Persist the new group and dismiss.
+    /// Persist changes to the group.  This function computes which members
+    /// have been removed and ensures any associated expenses are dropped.
     private func save() {
-        let members = memberNames
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .map { User(id: UUID(), name: $0) }
-        let budgetValue: Double? = Double(budgetString.trimmingCharacters(in: .whitespaces))
-        let group = Group(
-            id: UUID(),
-            name: name.trimmingCharacters(in: .whitespaces),
-            members: members,
-            expenses: [],
-            isPublic: isPublic,
-            budget: budgetValue,
-            activity: [],
-            currency: selectedCurrency,
-            colorName: selectedColorName,
-            iconName: selectedIconName,
-            adjustments: []
-        )
-        groupVM.addGroup(group)
+        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        let trimmedMembers = memberNames.map { $0.trimmingCharacters(in: .whitespaces) }
+        let filteredNames = trimmedMembers.filter { !$0.isEmpty }
+        
+        // Build updated member objects.  Reuse existing users if the name matches.
+        var updatedMembers: [User] = []
+        for userName in filteredNames {
+            if let existing = group.members.first(where: { $0.name == userName }) {
+                updatedMembers.append(existing)
+            } else {
+                updatedMembers.append(User(id: UUID(), name: userName))
+            }
+        }
+        
+        // Determine which members were removed compared to the original list
+        let removedUsers = group.members.filter { original in
+            !filteredNames.contains(where: { $0 == original.name })
+        }
+        // Remove expenses referencing removed users
+        for removed in removedUsers {
+            groupVM.removeMember(removed, from: group)
+        }
+        
+        // Retrieve the latest version of the group from the view model
+        var updatedGroup = groupVM.groups.first(where: { $0.id == group.id }) ?? group
+        // Determine if the name changed and log it separately
+        if updatedGroup.name != trimmedName {
+            groupVM.renameGroup(updatedGroup, newName: trimmedName)
+            updatedGroup.name = trimmedName
+        }
+        // Compute budget value from text
+        let trimmedBudget = budgetString.trimmingCharacters(in: .whitespaces)
+        let budgetValue = Double(trimmedBudget)
+        updatedGroup.budget = budgetValue
+        // Update public flag
+        if updatedGroup.isPublic != isPublic {
+            updatedGroup.isPublic = isPublic
+            let state = isPublic ? "public" : "private"
+            groupVM.logActivity(for: group.id, text: "Changed group visibility to \(state)")
+        }
+        // Update currency if it changed
+        if updatedGroup.currency != selectedCurrency {
+            let oldCurrency = updatedGroup.currency
+            updatedGroup.currency = selectedCurrency
+            groupVM.logActivity(for: group.id, text: "Changed currency from \(oldCurrency.code) to \(selectedCurrency.code)")
+        }
+        // Update colour
+        if updatedGroup.colorName != selectedColorName {
+            updatedGroup.colorName = selectedColorName
+            groupVM.logActivity(for: group.id, text: "Changed colour to \(selectedColorName)")
+        }
+        // Update icon
+        if updatedGroup.iconName != selectedIconName {
+            updatedGroup.iconName = selectedIconName
+            groupVM.logActivity(for: group.id, text: "Changed icon to \(selectedIconName)")
+        }
+        // Update members
+        updatedGroup.members = updatedMembers
+        groupVM.updateGroup(updatedGroup)
         presentationMode.wrappedValue.dismiss()
     }
 }

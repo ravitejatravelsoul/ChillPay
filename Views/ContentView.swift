@@ -1,12 +1,13 @@
 import SwiftUI
 
+/// Root view for ChillPay.  Creates a single `GroupViewModel` and injects
+/// it into the `GroupListView` for the remainder of the application.
 struct ContentView: View {
-    @StateObject var groupVM = GroupViewModel()
+    @StateObject private var groupVM = GroupViewModel()
+    
     var body: some View {
         NavigationView {
-            GroupListView()
-                .environmentObject(groupVM)
-                .navigationTitle("Groups")
+            GroupListView(groupVM: groupVM)
         }
     }
 }
