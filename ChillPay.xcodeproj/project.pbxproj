@@ -1,0 +1,697 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3A11D7182E740104004949B6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7102E73FE8A004949B6 /* ContentView.swift */; };
+		3A11D7192E740116004949B6 /* GroupListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7112E73FE96004949B6 /* GroupListView.swift */; };
+		3A11D71A2E74011C004949B6 /* AddGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7122E73FEA3004949B6 /* AddGroupView.swift */; };
+		3A11D71B2E740122004949B6 /* ExpenseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7132E73FEBE004949B6 /* ExpenseListView.swift */; };
+		3A11D71C2E740128004949B6 /* AddExpenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7142E73FECC004949B6 /* AddExpenseView.swift */; };
+		3A11D71D2E740132004949B6 /* GroupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70F2E73FE6B004949B6 /* GroupViewModel.swift */; };
+		3A11D71E2E740139004949B6 /* ExpenseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70E2E73FE56004949B6 /* ExpenseViewModel.swift */; };
+		3A11D71F2E740140004949B6 /* DummyData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7152E73FEDB004949B6 /* DummyData.swift */; };
+		3A11D7202E740147004949B6 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7162E73FEEC004949B6 /* AuthService.swift */; };
+		3A11D7212E74014D004949B6 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7172E73FF03004949B6 /* NotificationService.swift */; };
+		3A11D7222E74015E004949B6 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70B2E73FE0E004949B6 /* User.swift */; };
+		3A11D7232E740163004949B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70C2E73FE26004949B6 /* Expense.swift */; };
+		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
+		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3A11D6EA2E73FD1E004949B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3A11D6D32E73FD16004949B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3A11D6DA2E73FD16004949B6;
+			remoteInfo = ChillPay;
+		};
+		3A11D6F42E73FD1E004949B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3A11D6D32E73FD16004949B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3A11D6DA2E73FD16004949B6;
+			remoteInfo = ChillPay;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		3A11D6DB2E73FD16004949B6 /* ChillPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChillPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A11D6E92E73FD1E004949B6 /* ChillPayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChillPayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A11D6F32E73FD1E004949B6 /* ChillPayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChillPayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A11D70B2E73FE0E004949B6 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		3A11D70C2E73FE26004949B6 /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
+		3A11D70D2E73FE3B004949B6 /* Group.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Group.swift; sourceTree = "<group>"; };
+		3A11D70E2E73FE56004949B6 /* ExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseViewModel.swift; sourceTree = "<group>"; };
+		3A11D70F2E73FE6B004949B6 /* GroupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupViewModel.swift; sourceTree = "<group>"; };
+		3A11D7102E73FE8A004949B6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3A11D7112E73FE96004949B6 /* GroupListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupListView.swift; sourceTree = "<group>"; };
+		3A11D7122E73FEA3004949B6 /* AddGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupView.swift; sourceTree = "<group>"; };
+		3A11D7132E73FEBE004949B6 /* ExpenseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseListView.swift; sourceTree = "<group>"; };
+		3A11D7142E73FECC004949B6 /* AddExpenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseView.swift; sourceTree = "<group>"; };
+		3A11D7152E73FEDB004949B6 /* DummyData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DummyData.swift; sourceTree = "<group>"; };
+		3A11D7162E73FEEC004949B6 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		3A11D6DD2E73FD16004949B6 /* ChillPay */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChillPay;
+			sourceTree = "<group>";
+		};
+		3A11D6EC2E73FD1E004949B6 /* ChillPayTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChillPayTests;
+			sourceTree = "<group>";
+		};
+		3A11D6F62E73FD1E004949B6 /* ChillPayUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChillPayUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3A11D6D82E73FD16004949B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6E62E73FD1E004949B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6F02E73FD1E004949B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3A11D6D22E73FD16004949B6 = {
+			isa = PBXGroup;
+			children = (
+				3A11D70A2E73FDB1004949B6 /* Services */,
+				3A11D7092E73FDA8004949B6 /* Utilities */,
+				3A11D7082E73FD9D004949B6 /* ViewModels */,
+				3A11D7072E73FD90004949B6 /* Views */,
+				3A11D7062E73FD7F004949B6 /* Models */,
+				3A11D6DD2E73FD16004949B6 /* ChillPay */,
+				3A11D6EC2E73FD1E004949B6 /* ChillPayTests */,
+				3A11D6F62E73FD1E004949B6 /* ChillPayUITests */,
+				3A11D6DC2E73FD16004949B6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3A11D6DC2E73FD16004949B6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D6DB2E73FD16004949B6 /* ChillPay.app */,
+				3A11D6E92E73FD1E004949B6 /* ChillPayTests.xctest */,
+				3A11D6F32E73FD1E004949B6 /* ChillPayUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3A11D7062E73FD7F004949B6 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D70D2E73FE3B004949B6 /* Group.swift */,
+				3A11D70C2E73FE26004949B6 /* Expense.swift */,
+				3A11D70B2E73FE0E004949B6 /* User.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		3A11D7072E73FD90004949B6 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D7142E73FECC004949B6 /* AddExpenseView.swift */,
+				3A11D7132E73FEBE004949B6 /* ExpenseListView.swift */,
+				3A11D7122E73FEA3004949B6 /* AddGroupView.swift */,
+				3A11D7112E73FE96004949B6 /* GroupListView.swift */,
+				3A11D7102E73FE8A004949B6 /* ContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		3A11D7082E73FD9D004949B6 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D70F2E73FE6B004949B6 /* GroupViewModel.swift */,
+				3A11D70E2E73FE56004949B6 /* ExpenseViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		3A11D7092E73FDA8004949B6 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D7252E740373004949B6 /* StorageManager.swift */,
+				3A11D7152E73FEDB004949B6 /* DummyData.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		3A11D70A2E73FDB1004949B6 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				3A11D7172E73FF03004949B6 /* NotificationService.swift */,
+				3A11D7162E73FEEC004949B6 /* AuthService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3A11D6DA2E73FD16004949B6 /* ChillPay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A11D6FD2E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPay" */;
+			buildPhases = (
+				3A11D6D72E73FD16004949B6 /* Sources */,
+				3A11D6D82E73FD16004949B6 /* Frameworks */,
+				3A11D6D92E73FD16004949B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3A11D6DD2E73FD16004949B6 /* ChillPay */,
+			);
+			name = ChillPay;
+			packageProductDependencies = (
+			);
+			productName = ChillPay;
+			productReference = 3A11D6DB2E73FD16004949B6 /* ChillPay.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3A11D6E82E73FD1E004949B6 /* ChillPayTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A11D7002E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPayTests" */;
+			buildPhases = (
+				3A11D6E52E73FD1E004949B6 /* Sources */,
+				3A11D6E62E73FD1E004949B6 /* Frameworks */,
+				3A11D6E72E73FD1E004949B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3A11D6EB2E73FD1E004949B6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3A11D6EC2E73FD1E004949B6 /* ChillPayTests */,
+			);
+			name = ChillPayTests;
+			packageProductDependencies = (
+			);
+			productName = ChillPayTests;
+			productReference = 3A11D6E92E73FD1E004949B6 /* ChillPayTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3A11D6F22E73FD1E004949B6 /* ChillPayUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A11D7032E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPayUITests" */;
+			buildPhases = (
+				3A11D6EF2E73FD1E004949B6 /* Sources */,
+				3A11D6F02E73FD1E004949B6 /* Frameworks */,
+				3A11D6F12E73FD1E004949B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3A11D6F52E73FD1E004949B6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3A11D6F62E73FD1E004949B6 /* ChillPayUITests */,
+			);
+			name = ChillPayUITests;
+			packageProductDependencies = (
+			);
+			productName = ChillPayUITests;
+			productReference = 3A11D6F32E73FD1E004949B6 /* ChillPayUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3A11D6D32E73FD16004949B6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					3A11D6DA2E73FD16004949B6 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					3A11D6E82E73FD1E004949B6 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 3A11D6DA2E73FD16004949B6;
+					};
+					3A11D6F22E73FD1E004949B6 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 3A11D6DA2E73FD16004949B6;
+					};
+				};
+			};
+			buildConfigurationList = 3A11D6D62E73FD16004949B6 /* Build configuration list for PBXProject "ChillPay" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3A11D6D22E73FD16004949B6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3A11D6DC2E73FD16004949B6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3A11D6DA2E73FD16004949B6 /* ChillPay */,
+				3A11D6E82E73FD1E004949B6 /* ChillPayTests */,
+				3A11D6F22E73FD1E004949B6 /* ChillPayUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3A11D6D92E73FD16004949B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6E72E73FD1E004949B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6F12E73FD1E004949B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3A11D6D72E73FD16004949B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A11D7182E740104004949B6 /* ContentView.swift in Sources */,
+				3A11D7212E74014D004949B6 /* NotificationService.swift in Sources */,
+				3A11D71D2E740132004949B6 /* GroupViewModel.swift in Sources */,
+				3A11D7192E740116004949B6 /* GroupListView.swift in Sources */,
+				3A11D71F2E740140004949B6 /* DummyData.swift in Sources */,
+				3A11D71B2E740122004949B6 /* ExpenseListView.swift in Sources */,
+				3A11D71C2E740128004949B6 /* AddExpenseView.swift in Sources */,
+				3A11D7242E74016C004949B6 /* Group.swift in Sources */,
+				3A11D71E2E740139004949B6 /* ExpenseViewModel.swift in Sources */,
+				3A11D7222E74015E004949B6 /* User.swift in Sources */,
+				3A11D7202E740147004949B6 /* AuthService.swift in Sources */,
+				3A11D71A2E74011C004949B6 /* AddGroupView.swift in Sources */,
+				3A11D7262E740373004949B6 /* StorageManager.swift in Sources */,
+				3A11D7232E740163004949B6 /* Expense.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6E52E73FD1E004949B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3A11D6EF2E73FD1E004949B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3A11D6EB2E73FD1E004949B6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3A11D6DA2E73FD16004949B6 /* ChillPay */;
+			targetProxy = 3A11D6EA2E73FD1E004949B6 /* PBXContainerItemProxy */;
+		};
+		3A11D6F52E73FD1E004949B6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3A11D6DA2E73FD16004949B6 /* ChillPay */;
+			targetProxy = 3A11D6F42E73FD1E004949B6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3A11D6FB2E73FD1E004949B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3A11D6FC2E73FD1E004949B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		3A11D6FE2E73FD1E004949B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ChillPay/ChillPay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Debug;
+		};
+		3A11D6FF2E73FD1E004949B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ChillPay/ChillPay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Release;
+		};
+		3A11D7012E73FD1E004949B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPayTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChillPay.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ChillPay";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Debug;
+		};
+		3A11D7022E73FD1E004949B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPayTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChillPay.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ChillPay";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Release;
+		};
+		3A11D7042E73FD1E004949B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPayUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = ChillPay;
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Debug;
+		};
+		3A11D7052E73FD1E004949B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X7XR5DT7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPayUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = ChillPay;
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A11D6D62E73FD16004949B6 /* Build configuration list for PBXProject "ChillPay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A11D6FB2E73FD1E004949B6 /* Debug */,
+				3A11D6FC2E73FD1E004949B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A11D6FD2E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A11D6FE2E73FD1E004949B6 /* Debug */,
+				3A11D6FF2E73FD1E004949B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A11D7002E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPayTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A11D7012E73FD1E004949B6 /* Debug */,
+				3A11D7022E73FD1E004949B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A11D7032E73FD1E004949B6 /* Build configuration list for PBXNativeTarget "ChillPayUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A11D7042E73FD1E004949B6 /* Debug */,
+				3A11D7052E73FD1E004949B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3A11D6D32E73FD16004949B6 /* Project object */;
+}
