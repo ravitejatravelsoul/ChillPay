@@ -2,14 +2,14 @@ import SwiftUI
 
 @main
 struct ChillPayApp: App {
-    init() {
-        // Request notification permissions on launch so that reminders can be scheduled later.
-        NotificationManager.shared.requestAuthorizationIfNeeded()
-    }
-    
+    @StateObject private var groupVM = GroupViewModel()
+    @StateObject private var friendsVM = FriendsViewModel.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(groupVM)
+                .environmentObject(friendsVM)
         }
     }
 }

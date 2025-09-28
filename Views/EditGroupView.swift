@@ -1,27 +1,25 @@
 import SwiftUI
 
-/// View used to edit an existing group's name and membership.  Members can
-/// be added or removed.  Removing a member will also remove any expenses
-/// that reference that user.
 struct EditGroupView: View {
     @Environment(\.presentationMode) private var presentationMode
     @ObservedObject var groupVM: GroupViewModel
+    @ObservedObject var friendsVM: FriendsViewModel
     var group: Group
-    
+
     @State private var name: String
-    @State private var memberNames: [String]
+    @State private var selectedMemberIDs: Set<UUID>
     @State private var isPublic: Bool
     @State private var budgetString: String
     @State private var selectedCurrency: Currency
     @State private var selectedColorName: String
     @State private var selectedIconName: String
-    
-    init(group: Group, groupVM: GroupViewModel) {
+
+    init(group: Group, groupVM: GroupViewModel, friendsVM: FriendsViewModel) {
         self.group = group
         self.groupVM = groupVM
+        self.friendsVM = friendsVM
         _name = State(initialValue: group.name)
-        let initialMembers = group.members.map { $0.name }
-        _memberNames = State(initialValue: initialMembers.isEmpty ? [""] : initialMembers)
+        _selectedMemberIDs = State(initialValue: Set(group.members.map { $0.id }))
         _isPublic = State(initialValue: group.isPublic)
         if let budget = group.budget {
             _budgetString = State(initialValue: String(format: "%.2f", budget))
@@ -32,7 +30,7 @@ struct EditGroupView: View {
         _selectedColorName = State(initialValue: group.colorName)
         _selectedIconName = State(initialValue: group.iconName)
     }
-    
+
     var body: some View {
         NavigationView {
             Form {
@@ -40,19 +38,38 @@ struct EditGroupView: View {
                     TextField("Enter name", text: $name)
                 }
                 Section(header: Text("Members")) {
-                    ForEach(memberNames.indices, id: \.self) { idx in
-                        HStack {
-                            TextField("Member Name", text: $memberNames[idx])
-                            if memberNames.count > 1 {
-                                Button(action: { memberNames.remove(at: idx) }) {
-                                    Image(systemName: "minus.circle.fill")
-                                        .foregroundColor(.red)
+                    if friendsVM.friends.isEmpty {
+                        Text("No friends available. Add friends to add them to groups.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(friendsVM.friends) { friend in
+                            Button(action: {
+                                if selectedMemberIDs.contains(friend.id) {
+                                    selectedMemberIDs.remove(friend.id)
+                                } else {
+                                    selectedMemberIDs.insert(friend.id)
+                                }
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(friend.name)
+                                        if let email = friend.email, !email.isEmpty {
+                                            Text(email)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    Spacer()
+                                    if selectedMemberIDs.contains(friend.id) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.accentColor)
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .foregroundColor(.gray)
+                                    }
                                 }
                             }
                         }
-                    }
-                    Button(action: { memberNames.append("") }) {
-                        Label("Add Member", systemImage: "plus.circle")
                     }
                 }
                 Section(header: Text("Settings")) {
@@ -117,74 +134,83 @@ struct EditGroupView: View {
                         save()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty ||
-                              memberNames.allSatisfy { $0.trimmingCharacters(in: .whitespaces).isEmpty })
+                              selectedMemberIDs.isEmpty)
                 }
             }
         }
     }
-    
-    /// Persist changes to the group.  This function computes which members
-    /// have been removed and ensures any associated expenses are dropped.
+
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        let trimmedMembers = memberNames.map { $0.trimmingCharacters(in: .whitespaces) }
-        let filteredNames = trimmedMembers.filter { !$0.isEmpty }
-        
-        // Build updated member objects.  Reuse existing users if the name matches.
-        var updatedMembers: [User] = []
-        for userName in filteredNames {
-            if let existing = group.members.first(where: { $0.name == userName }) {
-                updatedMembers.append(existing)
-            } else {
-                updatedMembers.append(User(id: UUID(), name: userName))
-            }
-        }
-        
-        // Determine which members were removed compared to the original list
-        let removedUsers = group.members.filter { original in
-            !filteredNames.contains(where: { $0 == original.name })
-        }
+        let updatedMembers = friendsVM.friends.filter { selectedMemberIDs.contains($0.id) }
+
         // Remove expenses referencing removed users
+        let removedUsers = group.members.filter { original in
+            !updatedMembers.contains(where: { $0.id == original.id })
+        }
         for removed in removedUsers {
             groupVM.removeMember(removed, from: group)
         }
-        
+
         // Retrieve the latest version of the group from the view model
         var updatedGroup = groupVM.groups.first(where: { $0.id == group.id }) ?? group
-        // Determine if the name changed and log it separately
+
+        // Update name and log if changed
         if updatedGroup.name != trimmedName {
             groupVM.renameGroup(updatedGroup, newName: trimmedName)
             updatedGroup.name = trimmedName
         }
+
         // Compute budget value from text
         let trimmedBudget = budgetString.trimmingCharacters(in: .whitespaces)
         let budgetValue = Double(trimmedBudget)
         updatedGroup.budget = budgetValue
+
         // Update public flag
         if updatedGroup.isPublic != isPublic {
             updatedGroup.isPublic = isPublic
             let state = isPublic ? "public" : "private"
             groupVM.logActivity(for: group.id, text: "Changed group visibility to \(state)")
         }
+
         // Update currency if it changed
         if updatedGroup.currency != selectedCurrency {
             let oldCurrency = updatedGroup.currency
             updatedGroup.currency = selectedCurrency
-            groupVM.logActivity(for: group.id, text: "Changed currency from \(oldCurrency.code) to \(selectedCurrency.code)")
+            groupVM.logActivity(
+                for: group.id,
+                text: "Changed currency from \(oldCurrency.rawValue.uppercased()) to \(selectedCurrency.rawValue.uppercased())"
+            )
         }
-        // Update colour
+
+        // Update colour and icon if changed
         if updatedGroup.colorName != selectedColorName {
             updatedGroup.colorName = selectedColorName
             groupVM.logActivity(for: group.id, text: "Changed colour to \(selectedColorName)")
         }
-        // Update icon
         if updatedGroup.iconName != selectedIconName {
             updatedGroup.iconName = selectedIconName
             groupVM.logActivity(for: group.id, text: "Changed icon to \(selectedIconName)")
         }
+
         // Update members
         updatedGroup.members = updatedMembers
         groupVM.updateGroup(updatedGroup)
         presentationMode.wrappedValue.dismiss()
+    }
+
+    // Helper to get a Color from a color name string
+    private func color(for name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "yellow": return .yellow
+        case "teal": return .teal
+        default: return .gray
+        }
     }
 }

@@ -1,44 +1,38 @@
 import Foundation
 
-/// Acts as the single source of truth for all groups in the app.
-///
-/// Whenever the `groups` array changes the updated value is persisted via
-/// `StorageManager`.  This view model also exposes helper functions for
-/// modifying groups, including adding members, removing members, renaming
-/// groups and deleting entire groups.
 class GroupViewModel: ObservableObject {
-    /// All of the groups currently created by the user.  Modifying this array
-    /// triggers automatic persistence to `UserDefaults`.
     @Published var groups: [Group] = [] {
         didSet {
             StorageManager.shared.saveGroups(groups)
+            friendsVM?.syncWithGroups(groups) // Keeps friends always in sync!
         }
     }
-    
-    /// Load saved groups on initialization.  If none exist, sample groups
-    /// from `DummyData` will be used instead.
-    init() {
+
+    weak var friendsVM: FriendsViewModel?
+
+    init(friendsVM: FriendsViewModel? = nil) {
+        self.friendsVM = friendsVM
         self.groups = StorageManager.shared.loadGroups()
+        friendsVM?.syncWithGroups(groups) // Initial sync on load
     }
-    
+
     /// Append a new group to the list.
     func addGroup(_ group: Group) {
         groups.append(group)
-        // Log creation activity
         logActivity(for: group.id, text: "Created group \(group.name)")
     }
-    
+
     /// Replace an existing group with an updated version.
     func updateGroup(_ group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         groups[index] = group
     }
-    
+
     /// Delete a group entirely.
     func deleteGroup(_ group: Group) {
         groups.removeAll { $0.id == group.id }
     }
-    
+
     /// Add a member to a group if they are not already present.
     func addMember(_ user: User, to group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -47,7 +41,7 @@ class GroupViewModel: ObservableObject {
             logActivity(for: group.id, text: "Added member \(user.name)")
         }
     }
-    
+
     /// Remove a member from a group and drop any expenses that reference them.
     func removeMember(_ user: User, from group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -61,7 +55,7 @@ class GroupViewModel: ObservableObject {
         groups[index] = g
         logActivity(for: group.id, text: "Removed member \(user.name)")
     }
-    
+
     /// Update a group’s name.
     func renameGroup(_ group: Group, newName: String) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }

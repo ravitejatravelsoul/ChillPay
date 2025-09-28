@@ -1,15 +1,12 @@
 import SwiftUI
 
-/// Presents a list of all groups the user has created.  Each row shows the
-/// group name along with a few member avatars.  Users can swipe to edit or
-/// delete a group.  A button in the toolbar opens the `AddGroupView` to
-/// create a new group.
 struct GroupListView: View {
     @ObservedObject var groupVM: GroupViewModel
-    
+    @ObservedObject var friendsVM: FriendsViewModel
+
     @State private var showAddGroup = false
     @State private var editingGroup: Group?
-    
+
     var body: some View {
         List {
             ForEach(groupVM.groups) { group in
@@ -53,10 +50,25 @@ struct GroupListView: View {
             }
         }
         .sheet(isPresented: $showAddGroup) {
-            AddGroupView(groupVM: groupVM)
+            AddGroupView(groupVM: groupVM, friendsVM: friendsVM) // <-- Fixed: Now passing friendsVM
         }
         .sheet(item: $editingGroup) { group in
-            EditGroupView(group: group, groupVM: groupVM)
+            EditGroupView(group: group, groupVM: groupVM, friendsVM: friendsVM)
+        }
+    }
+
+    // Utility function to map color names to actual SwiftUI colors
+    private func color(for colorName: String) -> Color {
+        switch colorName {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "pink": return .pink
+        case "purple": return .purple
+        case "red": return .red
+        case "yellow": return .yellow
+        case "teal": return .teal
+        default: return .gray
         }
     }
 }

@@ -21,6 +21,19 @@
 		3A11D7232E740163004949B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70C2E73FE26004949B6 /* Expense.swift */; };
 		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
 		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
+		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
+		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
+		3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD92E8849570093D65A /* GroupsView.swift */; };
+		3A80FCDC2E8849660093D65A /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCDB2E8849660093D65A /* ActivitiesView.swift */; };
+		3A80FCDE2E8849860093D65A /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCDD2E8849860093D65A /* ProfileView.swift */; };
+		3A80FCE02E8867980093D65A /* GlobalAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCDF2E8867980093D65A /* GlobalAnalyticsView.swift */; };
+		3A80FCE22E886AF90093D65A /* GroupSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCE12E886AF90093D65A /* GroupSummaryView.swift */; };
+		3A80FCE42E886DF30093D65A /* GroupSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCE32E886DF30093D65A /* GroupSummarySection.swift */; };
+		3A80FCE62E888DDE0093D65A /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCE52E888DDE0093D65A /* AddFriendView.swift */; };
+		3A80FCE82E888E1F0093D65A /* FriendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCE72E888E1F0093D65A /* FriendDetailView.swift */; };
+		3A80FCEA2E888E4A0093D65A /* AddDirectExpenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCE92E888E4A0093D65A /* AddDirectExpenseView.swift */; };
+		3A80FCEC2E888E660093D65A /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCEB2E888E660093D65A /* FriendsViewModel.swift */; };
+		3A80FCEE2E88F06F0093D65A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCED2E88F06F0093D65A /* SettingsView.swift */; };
 		3AD5E56D2E7E669000FAE979 /* ChillPayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */; };
 		3AD5E5762E7E67B200FAE979 /* ColorHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5752E7E67B200FAE979 /* ColorHelpers.swift */; };
 		3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5772E7E67D100FAE979 /* ExpenseDetailView.swift */; };
@@ -70,6 +83,19 @@
 		3A11D7162E73FEEC004949B6 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
+		3A80FCD92E8849570093D65A /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
+		3A80FCDB2E8849660093D65A /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
+		3A80FCDD2E8849860093D65A /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		3A80FCDF2E8867980093D65A /* GlobalAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalAnalyticsView.swift; sourceTree = "<group>"; };
+		3A80FCE12E886AF90093D65A /* GroupSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSummaryView.swift; sourceTree = "<group>"; };
+		3A80FCE32E886DF30093D65A /* GroupSummarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSummarySection.swift; sourceTree = "<group>"; };
+		3A80FCE52E888DDE0093D65A /* AddFriendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriendView.swift; sourceTree = "<group>"; };
+		3A80FCE72E888E1F0093D65A /* FriendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendDetailView.swift; sourceTree = "<group>"; };
+		3A80FCE92E888E4A0093D65A /* AddDirectExpenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddDirectExpenseView.swift; sourceTree = "<group>"; };
+		3A80FCEB2E888E660093D65A /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
+		3A80FCED2E88F06F0093D65A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChillPayApp.swift; sourceTree = "<group>"; };
 		3AD5E5752E7E67B200FAE979 /* ColorHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorHelpers.swift; sourceTree = "<group>"; };
 		3AD5E5772E7E67D100FAE979 /* ExpenseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetailView.swift; sourceTree = "<group>"; };
@@ -171,6 +197,18 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A80FCED2E88F06F0093D65A /* SettingsView.swift */,
+				3A80FCE92E888E4A0093D65A /* AddDirectExpenseView.swift */,
+				3A80FCE72E888E1F0093D65A /* FriendDetailView.swift */,
+				3A80FCE52E888DDE0093D65A /* AddFriendView.swift */,
+				3A80FCE32E886DF30093D65A /* GroupSummarySection.swift */,
+				3A80FCE12E886AF90093D65A /* GroupSummaryView.swift */,
+				3A80FCDF2E8867980093D65A /* GlobalAnalyticsView.swift */,
+				3A80FCDD2E8849860093D65A /* ProfileView.swift */,
+				3A80FCDB2E8849660093D65A /* ActivitiesView.swift */,
+				3A80FCD92E8849570093D65A /* GroupsView.swift */,
+				3A80FCD72E88494B0093D65A /* FriendsView.swift */,
+				3A80FCD52E8849400093D65A /* MainTabView.swift */,
 				3AD5E57B2E7E684900FAE979 /* AnalyticsView.swift */,
 				3AD5E57C2E7E684900FAE979 /* AvatarView.swift */,
 				3AD5E5792E7E681D00FAE979 /* EditGroupView.swift */,
@@ -188,6 +226,7 @@
 		3A11D7082E73FD9D004949B6 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				3A80FCEB2E888E660093D65A /* FriendsViewModel.swift */,
 				3A11D70F2E73FE6B004949B6 /* GroupViewModel.swift */,
 				3A11D70E2E73FE56004949B6 /* ExpenseViewModel.swift */,
 			);
@@ -357,20 +396,32 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */,
 				3A11D7182E740104004949B6 /* ContentView.swift in Sources */,
 				3AD5E5862E7E6A1500FAE979 /* Adjustment.swift in Sources */,
+				3A80FCE82E888E1F0093D65A /* FriendDetailView.swift in Sources */,
+				3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */,
+				3A80FCEA2E888E4A0093D65A /* AddDirectExpenseView.swift in Sources */,
 				3AD5E5872E7E6A1500FAE979 /* ExpenseCategory.swift in Sources */,
 				3AD5E5882E7E6A1500FAE979 /* Activity.swift in Sources */,
 				3AD5E5892E7E6A1500FAE979 /* Currency.swift in Sources */,
 				3AD5E58A2E7E6A1500FAE979 /* Comment.swift in Sources */,
+				3A80FCE02E8867980093D65A /* GlobalAnalyticsView.swift in Sources */,
 				3A11D7212E74014D004949B6 /* NotificationService.swift in Sources */,
+				3A80FCEE2E88F06F0093D65A /* SettingsView.swift in Sources */,
+				3A80FCDC2E8849660093D65A /* ActivitiesView.swift in Sources */,
 				3A11D71D2E740132004949B6 /* GroupViewModel.swift in Sources */,
+				3A80FCEC2E888E660093D65A /* FriendsViewModel.swift in Sources */,
 				3A11D7192E740116004949B6 /* GroupListView.swift in Sources */,
 				3A11D71F2E740140004949B6 /* DummyData.swift in Sources */,
 				3A11D71B2E740122004949B6 /* ExpenseListView.swift in Sources */,
 				3AD5E57D2E7E684900FAE979 /* AvatarView.swift in Sources */,
 				3AD5E57E2E7E684900FAE979 /* AnalyticsView.swift in Sources */,
+				3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */,
+				3A80FCE62E888DDE0093D65A /* AddFriendView.swift in Sources */,
+				3A80FCE42E886DF30093D65A /* GroupSummarySection.swift in Sources */,
 				3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */,
+				3A80FCDE2E8849860093D65A /* ProfileView.swift in Sources */,
 				3A11D71C2E740128004949B6 /* AddExpenseView.swift in Sources */,
 				3A11D7242E74016C004949B6 /* Group.swift in Sources */,
 				3A11D71E2E740139004949B6 /* ExpenseViewModel.swift in Sources */,
@@ -379,6 +430,7 @@
 				3AD5E57A2E7E681D00FAE979 /* EditGroupView.swift in Sources */,
 				3A11D7202E740147004949B6 /* AuthService.swift in Sources */,
 				3A11D71A2E74011C004949B6 /* AddGroupView.swift in Sources */,
+				3A80FCE22E886AF90093D65A /* GroupSummaryView.swift in Sources */,
 				3A11D7262E740373004949B6 /* StorageManager.swift in Sources */,
 				3AD5E5802E7E688400FAE979 /* NotificationManager.swift in Sources */,
 				3A11D7232E740163004949B6 /* Expense.swift in Sources */,

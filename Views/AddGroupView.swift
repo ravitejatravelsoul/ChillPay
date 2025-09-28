@@ -1,26 +1,18 @@
 import SwiftUI
 
-/// View used to create a brand new group.  The user can specify a group
-/// name and an arbitrary number of members.  On save the new group is
-/// appended to the `GroupViewModel`.
 struct AddGroupView: View {
     @Environment(\.presentationMode) private var presentationMode
     @ObservedObject var groupVM: GroupViewModel
-    
+    @ObservedObject var friendsVM: FriendsViewModel
+
     @State private var name: String = ""
     @State private var memberNames: [String] = [""]
     @State private var isPublic: Bool = false
     @State private var budgetString: String = ""
-
-    /// The currency selected for this group.  Default is US dollars.
     @State private var selectedCurrency: Currency = .usd
-    /// The colour used to theme the group.  Values correspond to SwiftUI
-    /// colour names; see `color(for:)` in `ColorHelpers.swift` for mapping.
     @State private var selectedColorName: String = "blue"
-    /// The SF Symbol representing the group.  A handful of suitable
-    /// symbols are offered to the user.
     @State private var selectedIconName: String = "person.3.fill"
-    
+
     var body: some View {
         NavigationView {
             Form {
@@ -53,7 +45,6 @@ struct AddGroupView: View {
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
-                    // Appearance
                     VStack(alignment: .leading) {
                         Text("Colour")
                             .font(.subheadline)
@@ -111,13 +102,15 @@ struct AddGroupView: View {
             }
         }
     }
-    
+
     /// Persist the new group and dismiss.
     private func save() {
-        let members = memberNames
+        let trimmedNames = memberNames
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-            .map { User(id: UUID(), name: $0) }
+        let members = trimmedNames.map { nameStr in
+            User(id: UUID(), name: nameStr)
+        }
         let budgetValue: Double? = Double(budgetString.trimmingCharacters(in: .whitespaces))
         let group = Group(
             id: UUID(),
@@ -134,5 +127,20 @@ struct AddGroupView: View {
         )
         groupVM.addGroup(group)
         presentationMode.wrappedValue.dismiss()
+    }
+
+    // Helper to get a Color from a color name string
+    private func color(for name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "yellow": return .yellow
+        case "teal": return .teal
+        default: return .gray
+        }
     }
 }

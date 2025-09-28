@@ -1,6 +1,5 @@
 import Foundation
 
-/// Represents a collection of users who share expenses together.
 struct Group: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
@@ -9,10 +8,10 @@ struct Group: Identifiable, Hashable, Codable {
     var isPublic: Bool
     var budget: Double?
     var activity: [Activity]
-    var currency: Currency = .usd
-    var colorName: String = "blue"
-    var iconName: String = "person.3.fill"
-    var adjustments: [Adjustment] = []
+    var currency: Currency
+    var colorName: String
+    var iconName: String
+    var adjustments: [Adjustment]
 
     /// Explicit memberwise initializer.
     init(
@@ -45,7 +44,7 @@ struct Group: Identifiable, Hashable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, name, members, expenses, isPublic, budget, activity, currency, colorName, iconName, adjustments
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)

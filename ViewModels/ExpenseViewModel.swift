@@ -1,16 +1,14 @@
 import Foundation
 
-/// Handles business logic related to expenses such as adding, updating,
-/// deleting and computing balances and settlements for a group.
 class ExpenseViewModel: ObservableObject {
     /// Reference to the parent `GroupViewModel` used to update groups when
     /// expenses change.
     let groupVM: GroupViewModel
-    
+
     init(groupVM: GroupViewModel) {
         self.groupVM = groupVM
     }
-    
+
     /// Add a new expense to the specified group.
     func addExpense(_ expense: Expense, to group: Group) {
         guard let index = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -20,7 +18,7 @@ class ExpenseViewModel: ObservableObject {
         let amt = String(format: "%.2f", expense.amount)
         groupVM.logActivity(for: group.id, text: "Added expense \(expense.title) for \(symbol)\(amt)")
     }
-    
+
     /// Update an existing expense within a group.  The expense is matched on its `id`.
     func updateExpense(_ expense: Expense, in group: Group) {
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -31,7 +29,7 @@ class ExpenseViewModel: ObservableObject {
             groupVM.logActivity(for: group.id, text: "Updated expense \(expense.title) to \(symbol)\(amt)")
         }
     }
-    
+
     /// Delete expenses at the provided indices from a group.
     func deleteExpenses(at offsets: IndexSet, from group: Group) {
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -45,10 +43,8 @@ class ExpenseViewModel: ObservableObject {
             groupVM.logActivity(for: group.id, text: "Deleted expense \(title)")
         }
     }
-    
-    /// Compute each user’s net balance for the given group.  A positive
-    /// balance means the user is owed money; a negative balance means they
-    /// owe others.
+
+
     func getBalances(for group: Group) -> [User: Double] {
         var balances: [User: Double] = [:]
         for user in group.members {
@@ -72,7 +68,7 @@ class ExpenseViewModel: ObservableObject {
         }
         return balances
     }
-    
+
     /// Generate a list of payments required to settle all balances in a group.
     ///
     /// The algorithm pairs users who owe money with those who are owed money
@@ -162,5 +158,13 @@ class ExpenseViewModel: ObservableObject {
         updatedExpense.comments.append(comment)
         groupVM.groups[groupIndex].expenses[expenseIndex] = updatedExpense
         groupVM.logActivity(for: group.id, text: "\(author.name) commented on \(expense.title)")
+    }
+
+    /// Mark a particular expense as settled in the group.
+    func settleExpense(_ expense: Expense, in group: Group) {
+        guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
+        guard let expenseIndex = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+        groupVM.groups[groupIndex].expenses[expenseIndex].isSettled = true
+        groupVM.logActivity(for: group.id, text: "Settled expense '\(expense.title)'")
     }
 }
