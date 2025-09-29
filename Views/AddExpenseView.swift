@@ -1,8 +1,5 @@
 import SwiftUI
 
-/// Form view used to create a new expense or edit an existing one.  When
-/// `expenseToEdit` is non‑`nil` the form is prepopulated and saving will
-/// update the existing expense rather than adding a new one.
 struct AddExpenseView: View {
     @Environment(\.presentationMode) private var presentationMode
     @ObservedObject var groupVM: GroupViewModel
@@ -15,25 +12,27 @@ struct AddExpenseView: View {
     @State private var selectedParticipants: Set<User>
     @State private var category: ExpenseCategory
     @State private var isRecurring: Bool
-    
+    @State private var expenseDate: Date
+
     init(group: Group, groupVM: GroupViewModel, expenseToEdit: Expense? = nil) {
         self.group = group
         self.groupVM = groupVM
         self.expenseToEdit = expenseToEdit
         _title = State(initialValue: expenseToEdit?.title ?? "")
-        // Convert amount to string for binding to TextField
         if let exp = expenseToEdit {
             _amountString = State(initialValue: String(format: "%.2f", exp.amount))
             _paidBy = State(initialValue: exp.paidBy)
             _selectedParticipants = State(initialValue: Set(exp.participants))
             _category = State(initialValue: exp.category)
             _isRecurring = State(initialValue: exp.isRecurring)
+            _expenseDate = State(initialValue: exp.date)
         } else {
             _amountString = State(initialValue: "")
             _paidBy = State(initialValue: nil)
             _selectedParticipants = State(initialValue: Set<User>())
             _category = State(initialValue: .other)
             _isRecurring = State(initialValue: false)
+            _expenseDate = State(initialValue: Date())
         }
     }
     
@@ -57,11 +56,18 @@ struct AddExpenseView: View {
                 }
                 Section(header: Text("Category")) {
                     Picker("Select Category", selection: $category) {
-                        ForEach(ExpenseCategory.allCases) { cat in
-                            Text(cat.displayName).tag(cat)
+                        ForEach(ExpenseCategory.allCases, id: \.self) { cat in
+                            HStack {
+                                Text(cat.emoji)
+                                Text(cat.displayName)
+                            }
+                            .tag(cat)
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
+                }
+                Section(header: Text("Date Paid")) {
+                    DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
                 }
                 Section(header: Text("Recurring")) {
                     Toggle("Recurring Expense", isOn: $isRecurring)
@@ -101,13 +107,11 @@ struct AddExpenseView: View {
         }
     }
     
-    /// Determine whether the form contains valid data.
     private var canSave: Bool {
         guard let _ = Double(amountString), let paidBy = paidBy else { return false }
         return !title.trimmingCharacters(in: .whitespaces).isEmpty && !selectedParticipants.isEmpty && group.members.contains(paidBy)
     }
     
-    /// Toggle inclusion of a user in the selected participants set.
     private func toggleParticipant(_ user: User) {
         if selectedParticipants.contains(user) {
             selectedParticipants.remove(user)
@@ -116,7 +120,6 @@ struct AddExpenseView: View {
         }
     }
     
-    /// Create or update an expense and persist it via `ExpenseViewModel`.
     private func save() {
         guard let amt = Double(amountString), let payer = paidBy else { return }
         let expense = Expense(
@@ -125,7 +128,7 @@ struct AddExpenseView: View {
             amount: amt,
             paidBy: payer,
             participants: Array(selectedParticipants),
-            date: Date(),
+            date: expenseDate,
             category: category,
             isRecurring: isRecurring,
             comments: expenseToEdit?.comments ?? []
@@ -135,6 +138,11 @@ struct AddExpenseView: View {
             expenseVM.updateExpense(expense, in: group)
         } else {
             expenseVM.addExpense(expense, to: group)
+            NotificationManager.shared.scheduleNotification(
+                title: "New Expense Added",
+                body: "\(payer.name) paid \(group.currency.symbol)\(String(format: "%.2f", amt)) for \"\(title)\"",
+                date: Date().addingTimeInterval(1)
+            )
         }
         presentationMode.wrappedValue.dismiss()
     }

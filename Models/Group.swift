@@ -12,6 +12,7 @@ struct Group: Identifiable, Hashable, Codable {
     var colorName: String
     var iconName: String
     var adjustments: [Adjustment]
+    var simplifyDebts: Bool // <-- This property is always present!
 
     /// Explicit memberwise initializer.
     init(
@@ -25,7 +26,8 @@ struct Group: Identifiable, Hashable, Codable {
         currency: Currency = .usd,
         colorName: String = "blue",
         iconName: String = "person.3.fill",
-        adjustments: [Adjustment] = []
+        adjustments: [Adjustment] = [],
+        simplifyDebts: Bool = false // <-- Default to false
     ) {
         self.id = id
         self.name = name
@@ -38,11 +40,12 @@ struct Group: Identifiable, Hashable, Codable {
         self.colorName = colorName
         self.iconName = iconName
         self.adjustments = adjustments
+        self.simplifyDebts = simplifyDebts
     }
 
     // Custom decoder to support older saved data (unchanged)
     enum CodingKeys: String, CodingKey {
-        case id, name, members, expenses, isPublic, budget, activity, currency, colorName, iconName, adjustments
+        case id, name, members, expenses, isPublic, budget, activity, currency, colorName, iconName, adjustments, simplifyDebts
     }
 
     init(from decoder: Decoder) throws {
@@ -58,5 +61,6 @@ struct Group: Identifiable, Hashable, Codable {
         colorName = try container.decodeIfPresent(String.self, forKey: .colorName) ?? "blue"
         iconName = try container.decodeIfPresent(String.self, forKey: .iconName) ?? "person.3.fill"
         adjustments = try container.decodeIfPresent([Adjustment].self, forKey: .adjustments) ?? []
+        simplifyDebts = try container.decodeIfPresent(Bool.self, forKey: .simplifyDebts) ?? false
     }
 }

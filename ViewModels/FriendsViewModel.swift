@@ -9,7 +9,10 @@ class FriendsViewModel: ObservableObject {
     /// Sync friends with all unique members from all groups.
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
-        friends = Array(allUsers).sorted { $0.name < $1.name }
+        // Fix: Publish on main queue to avoid SwiftUI warning
+        DispatchQueue.main.async {
+            self.friends = Array(allUsers).sorted { $0.name < $1.name }
+        }
     }
 
     // Mock balances for display purposes

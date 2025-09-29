@@ -82,7 +82,8 @@ struct ExpenseListView: View {
                 ExpenseDetailView(groupVM: groupVM, group: group, expense: exp)
             }
             .sheet(isPresented: $showAnalytics) {
-                AnalyticsView(group: group)
+                // Fix: Pass groupVM if AnalyticsView expects it
+                AnalyticsView(group: group, groupVM: groupVM)
             }
         }
     }

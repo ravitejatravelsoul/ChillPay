@@ -1,14 +1,14 @@
 import Foundation
 
-struct Expense: Identifiable, Hashable, Codable {
+struct Expense: Identifiable, Codable, Hashable {
     let id: UUID
-    var title: String
-    var amount: Double
-    var paidBy: ChillPay.User
-    var participants: [ChillPay.User]
-    var date: Date
-    var category: ExpenseCategory
-    var isRecurring: Bool
+    let title: String
+    let amount: Double
+    let paidBy: User
+    let participants: [User]
+    let date: Date
+    let category: ExpenseCategory
+    let isRecurring: Bool
     var comments: [Comment]
-    var isSettled: Bool = false
+    var isSettled: Bool = false // <-- Add this line
 }

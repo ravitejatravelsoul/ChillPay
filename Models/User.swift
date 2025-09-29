@@ -1,8 +1,8 @@
 import Foundation
 
-public struct User: Identifiable, Hashable, Codable {
-    public let id: UUID
-    public var name: String
+struct User: Identifiable, Codable, Hashable {
+    let id: UUID
+    var name: String
     public var email: String?
 
     public init(id: UUID, name: String, email: String? = nil) {

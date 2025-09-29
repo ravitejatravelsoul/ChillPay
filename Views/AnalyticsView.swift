@@ -5,6 +5,7 @@ import Charts
 /// category totals, member totals and general statistics.
 struct AnalyticsView: View {
     var group: Group
+    var groupVM: GroupViewModel
     @Environment(\.presentationMode) private var presentationMode
     
     private var categoryTotals: [(category: ExpenseCategory, total: Double)] {

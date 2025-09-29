@@ -1,6 +1,6 @@
 import Foundation
 
-struct Adjustment: Identifiable, Hashable, Codable {
+struct Adjustment: Identifiable, Codable, Hashable {
     let id: UUID
     let from: ChillPay.User
     let to: ChillPay.User
