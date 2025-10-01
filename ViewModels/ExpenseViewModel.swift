@@ -78,16 +78,16 @@ class ExpenseViewModel: ObservableObject {
                 creditors.append((user, balance))
             }
         }
-        // No sorting or minimization!
         var settlements: [(payer: User, payee: User, amount: Double)] = []
-        for var debtor in debtors {
+        for debtor in debtors {
             var amountOwed = debtor.amount
             for i in creditors.indices {
-                var creditor = creditors[i]
+                let creditor = creditors[i]
                 if creditor.amount <= 0.01 || amountOwed <= 0.01 { continue }
                 let payment = min(amountOwed, creditor.amount)
                 settlements.append((payer: debtor.user, payee: creditor.user, amount: payment))
                 amountOwed -= payment
+                // Mutate local creditors array, not a variable
                 creditors[i].amount -= payment
             }
         }
@@ -149,18 +149,21 @@ class ExpenseViewModel: ObservableObject {
 
     func addComment(_ text: String, by author: User, to expense: Expense, in group: Group) {
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
-        if let expenseIndex = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) {
-            var updatedExpense = groupVM.groups[groupIndex].expenses[expenseIndex]
+        if let _ = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) {
+            var updatedExpense = expense
             let comment = Comment(id: UUID(), user: author, text: text, date: Date())
             updatedExpense.comments.append(comment)
-            groupVM.groups[groupIndex].expenses[expenseIndex] = updatedExpense
+            // update expense in group
+            if let idx = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == updatedExpense.id }) {
+                groupVM.groups[groupIndex].expenses[idx] = updatedExpense
+            }
             groupVM.logActivity(for: group.id, text: "\(author.name) commented on \(expense.title)")
         }
     }
 
     func settleExpense(_ expense: Expense, in group: Group) {
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
-        if let expenseIndex = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) {
+        if groupVM.groups[groupIndex].expenses.contains(where: { $0.id == expense.id }) {
             // Uncomment next if your Expense struct includes isSettled:
             // groupVM.groups[groupIndex].expenses[expenseIndex].isSettled = true
             groupVM.logActivity(for: group.id, text: "Settled expense '\(expense.title)'")

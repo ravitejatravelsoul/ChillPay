@@ -13,6 +13,7 @@ struct AddExpenseView: View {
     @State private var category: ExpenseCategory
     @State private var isRecurring: Bool
     @State private var expenseDate: Date
+    @State private var errorMsg: String?
 
     init(group: Group, groupVM: GroupViewModel, expenseToEdit: Expense? = nil) {
         self.group = group
@@ -37,71 +38,135 @@ struct AddExpenseView: View {
     }
     
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Title")) {
-                    TextField("Enter title", text: $title)
-                }
-                Section(header: Text("Amount (\(group.currency.symbol))")) {
-                    TextField("Enter amount", text: $amountString)
-                        .keyboardType(.decimalPad)
-                }
-                Section(header: Text("Paid By")) {
-                    Picker("Select Payer", selection: $paidBy) {
-                        Text("Select").tag(Optional<User>(nil))
-                        ForEach(group.members) { user in
-                            Text(user.name).tag(Optional(user))
-                        }
-                    }
-                }
-                Section(header: Text("Category")) {
-                    Picker("Select Category", selection: $category) {
-                        ForEach(ExpenseCategory.allCases, id: \.self) { cat in
-                            HStack {
-                                Text(cat.emoji)
-                                Text(cat.displayName)
+        ZStack {
+            ChillTheme.background.ignoresSafeArea()
+            VStack(spacing: 32) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.bottom, 8)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Title
+                        Text("Title")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        ZStack(alignment: .leading) {
+                            if title.isEmpty {
+                                Text("Enter title")
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .padding(.leading, 18)
                             }
-                            .tag(cat)
+                            TextField("", text: $title)
+                                .textFieldStyle(ChillTextFieldStyle())
                         }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                }
-                Section(header: Text("Date Paid")) {
-                    DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
-                }
-                Section(header: Text("Recurring")) {
-                    Toggle("Recurring Expense", isOn: $isRecurring)
-                }
-                Section(header: Text("Participants")) {
-                    ForEach(group.members) { user in
+
+                        // Amount
+                        Text("Amount (\(group.currency.symbol))")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        ZStack(alignment: .leading) {
+                            if amountString.isEmpty {
+                                Text("Enter amount")
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .padding(.leading, 18)
+                            }
+                            TextField("", text: $amountString)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(ChillTextFieldStyle())
+                        }
+
+                        // Paid By
+                        Text("Paid By")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Picker(selection: $paidBy, label: Text("Select Payer").foregroundColor(.white)) {
+                            Text("Select").tag(Optional<User>(nil))
+                            ForEach(group.members) { user in
+                                Text(user.name).tag(Optional(user))
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .padding(.horizontal, 2)
+
+                        // Category
+                        Text("Category")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
+                            ForEach(ExpenseCategory.allCases, id: \.self) { cat in
+                                HStack {
+                                    Text(cat.emoji)
+                                    Text(cat.displayName)
+                                }
+                                .tag(cat)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .padding(.horizontal, 2)
+
+                        // Date
+                        Text("Date Paid")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
+                            .datePickerStyle(CompactDatePickerStyle())
+                            .accentColor(.green)
+                            .padding(.vertical, 2)
+                            .colorScheme(.dark)
+
+                        // Recurring
+                        Toggle(isOn: $isRecurring) {
+                            Text("Recurring Expense")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .green))
+                        .padding(.vertical, 4)
+
+                        // Participants (as chips)
+                        Text("Participants")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        ParticipantsWrapView(users: group.members, selectedParticipants: $selectedParticipants)
+
+                        if let msg = errorMsg {
+                            Text(msg)
+                                .foregroundColor(.red)
+                                .font(.subheadline)
+                                .padding(.top, 2)
+                        }
+
+                        // Save Button
                         Button(action: {
-                            toggleParticipant(user)
+                            save()
                         }) {
                             HStack {
-                                AvatarView(user: user)
-                                Text(user.name)
                                 Spacer()
-                                if selectedParticipants.contains(user) {
-                                    Image(systemName: "checkmark")
-                                }
+                                Text("Save")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                Spacer()
                             }
+                            .padding()
+                            .background(canSave ? Color.green : Color.gray)
+                            .cornerRadius(14)
                         }
-                        .foregroundColor(.primary)
+                        .disabled(!canSave)
                     }
                 }
+                .padding()
+                .background(ChillTheme.card)
+                .cornerRadius(28)
+                .padding(.horizontal, 20)
+
+                Spacer()
             }
-            .navigationTitle(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        save()
-                    }
-                    .disabled(!canSave)
+                    Button("Cancel") { presentationMode.wrappedValue.dismiss() }
+                        .foregroundColor(.red)
                 }
             }
         }
@@ -122,6 +187,7 @@ struct AddExpenseView: View {
     
     private func save() {
         guard let amt = Double(amountString), let payer = paidBy else { return }
+        if !canSave { errorMsg = "Fill all required fields"; return }
         let expense = Expense(
             id: expenseToEdit?.id ?? UUID(),
             title: title.trimmingCharacters(in: .whitespaces),
@@ -129,9 +195,10 @@ struct AddExpenseView: View {
             paidBy: payer,
             participants: Array(selectedParticipants),
             date: expenseDate,
+            groupID: expenseToEdit?.groupID,
+            comments: expenseToEdit?.comments ?? [],
             category: category,
-            isRecurring: isRecurring,
-            comments: expenseToEdit?.comments ?? []
+            isRecurring: isRecurring
         )
         let expenseVM = ExpenseViewModel(groupVM: groupVM)
         if expenseToEdit != nil {
@@ -145,5 +212,107 @@ struct AddExpenseView: View {
             )
         }
         presentationMode.wrappedValue.dismiss()
+    }
+}
+
+// MARK: - Participants Wrap View
+
+struct ParticipantsWrapView: View {
+    let users: [User]
+    @Binding var selectedParticipants: Set<User>
+    
+    var body: some View {
+        FlexibleView(
+            data: Array(users),
+            spacing: 8,
+            alignment: .leading
+        ) { user in
+            Button(action: {
+                if selectedParticipants.contains(user) {
+                    selectedParticipants.remove(user)
+                } else {
+                    selectedParticipants.insert(user)
+                }
+            }) {
+                HStack {
+                    AvatarView(user: user)
+                        .frame(width: 28, height: 28)
+                    Text(user.name)
+                        .font(.subheadline)
+                        .foregroundColor(selectedParticipants.contains(user) ? .white : .gray)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 12)
+                .background(selectedParticipants.contains(user) ? Color.green : Color(.systemGray4))
+                .cornerRadius(14)
+            }
+        }
+    }
+}
+
+// MARK: - FlexibleView
+
+struct FlexibleView<Data: RandomAccessCollection, Content: View>: View where Data.Element: Identifiable {
+    let data: Data
+    let spacing: CGFloat
+    let alignment: HorizontalAlignment
+    let content: (Data.Element) -> Content
+
+    @State private var totalHeight: CGFloat = .zero
+
+    var body: some View {
+        GeometryReader { geometry in
+            generateContent(in: geometry)
+        }
+        .frame(height: totalHeight)
+    }
+
+    private func generateContent(in geometry: GeometryProxy) -> some View {
+        var width = CGFloat.zero
+        var height = CGFloat.zero
+
+        return ZStack(alignment: Alignment(horizontal: alignment, vertical: .top)) {
+            ForEach(Array(data.enumerated()), id: \.element.id) { (index, item) in
+                content(item)
+                    .padding(.trailing, spacing)
+                    .alignmentGuide(.leading, computeValue: { d in
+                        if (abs(width - d.width) > geometry.size.width) {
+                            width = 0
+                            height -= d.height + spacing
+                        }
+                        let result = width
+                        if index == data.count - 1 {
+                            width = 0
+                        } else {
+                            width -= d.width + spacing
+                        }
+                        return result
+                    })
+                    .alignmentGuide(.top, computeValue: { _ in
+                        let result = height
+                        if index == data.count - 1 {
+                            height = 0
+                        }
+                        return result
+                    })
+            }
+        }
+        .background(viewHeightReader($totalHeight))
+    }
+
+    private func viewHeightReader(_ binding: Binding<CGFloat>) -> some View {
+        GeometryReader { geo in
+            Color.clear.preference(key: HeightPreferenceKey.self, value: geo.size.height)
+        }
+        .onPreferenceChange(HeightPreferenceKey.self) { value in
+            binding.wrappedValue = value
+        }
+    }
+}
+
+private struct HeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

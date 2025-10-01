@@ -16,7 +16,8 @@ struct ExpenseDetailView: View {
     @State private var reminderDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date().addingTimeInterval(86400)
     @State private var showDatePicker: Bool = false
     @State private var showSettleAlert: Bool = false
-    @State private var isSettled: Bool
+
+    // Remove isSettled from @State; use computed property or model value
 
     init(groupVM: GroupViewModel, group: Group, expense: Expense) {
         self.groupVM = groupVM
@@ -28,7 +29,12 @@ struct ExpenseDetailView: View {
         } else {
             _selectedAuthor = State(initialValue: User(id: UUID(), name: ""))
         }
-        _isSettled = State(initialValue: expense.isSettled)
+    }
+
+    var isSettled: Bool {
+        // If you want to support 'settled' status, add this to Expense and update accordingly.
+        // For now, always return false.
+        return false
     }
 
     var body: some View {
@@ -199,7 +205,7 @@ struct ExpenseDetailView: View {
         if let updatedGroup = groupVM.groups.first(where: { $0.id == group.id }),
            let updatedExpense = updatedGroup.expenses.first(where: { $0.id == expense.id }) {
             currentExpense = updatedExpense
-            isSettled = updatedExpense.isSettled
+            // isSettled = updatedExpense.isSettled // If you add isSettled to Expense, update here.
         }
     }
 
@@ -232,7 +238,8 @@ struct ExpenseDetailView: View {
     private func settleExpense() {
         let evm = ExpenseViewModel(groupVM: groupVM)
         evm.settleExpense(currentExpense, in: group)
-        isSettled = true
+        // If you support isSettled, update here:
+        // currentExpense.isSettled = true
         syncExpense()
     }
 

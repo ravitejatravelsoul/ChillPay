@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct FriendsView: View {
-    @ObservedObject var friendsVM: FriendsViewModel = FriendsViewModel.shared // Assume singleton or inject
+    @ObservedObject var friendsVM: FriendsViewModel = FriendsViewModel.shared
     @State private var searchText = ""
     @State private var showAddFriendSheet = false
     @State private var selectedFriend: User?
     @State private var sortByOwesYou = false
-    
+
     var filteredFriends: [User] {
         let list = friendsVM.friends
         if searchText.isEmpty { return list }
@@ -14,88 +14,91 @@ struct FriendsView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack {
-                // Search bar
-                HStack {
-                    TextField("Search friends...", text: $searchText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill").foregroundColor(.gray)
+        ZStack {
+            ChillTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 32) {
+                // Header Card
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Friends")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.top, 4)
+
+                    // Search
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        TextField("Search friends...", text: $searchText)
+                            .font(.body)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                    }
+                    .padding(12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+
+                    // Actions
+                    HStack(spacing: 16) {
+                        Button(action: { showAddFriendSheet = true }) {
+                            Label("Add Friend", systemImage: "person.badge.plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(14)
                         }
-                        .padding(.trailing)
-                    }
-                }
-                // Add friend and sort buttons
-                HStack {
-                    Button(action: { showAddFriendSheet = true }) {
-                        Label("Add Friend", systemImage: "person.badge.plus")
-                    }
-                    Spacer()
-                    Button(action: { sortByOwesYou.toggle(); friendsVM.sortByOwesYou(sort: sortByOwesYou) }) {
-                        Image(systemName: sortByOwesYou ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down.circle")
-                        Text(sortByOwesYou ? "Sort: Owes You" : "Sort: Name")
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 5)
-                
-                // Pending invites
-                if !friendsVM.pendingInvites.isEmpty {
-                    VStack(alignment: .leading) {
-                        Text("Pending Invites")
-                            .font(.headline)
-                        ForEach(friendsVM.pendingInvites) { invite in
+
+                        Button(action: {
+                            sortByOwesYou.toggle()
+                            friendsVM.sortByOwesYou(sort: sortByOwesYou)
+                        }) {
                             HStack {
-                                Text(invite.email)
-                                Spacer()
-                                Text("Invited")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
+                                Image(systemName: "arrow.up.arrow.down.circle")
+                                Text("Sort: Name")
                             }
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray4))
+                            .foregroundColor(.gray)
+                            .cornerRadius(14)
                         }
                     }
-                    .padding(.horizontal)
                 }
-                
-                // Friends list
-                List {
+                .padding()
+                .background(ChillTheme.card)
+                .cornerRadius(28)
+                .padding(.horizontal)
+
+                // Friends List Card
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("Your Friends")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Spacer()
+                        Text("\(filteredFriends.count) total")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.bottom, 10)
+
                     ForEach(filteredFriends) { friend in
-                        HStack {
-                            AvatarView(user: friend)
-                            VStack(alignment: .leading) {
-                                Text(friend.name)
-                                if let email = friend.email {
-                                    Text(email).font(.caption).foregroundColor(.secondary)
-                                }
-                            }
-                            Spacer()
-                            // Show net balance
-                            let balance = friendsVM.balanceWith(friend: friend)
-                            Text(friendsVM.balanceString(balance, friend: friend))
-                                .foregroundColor(friendsVM.balanceColor(balance))
-                                .font(.headline)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { selectedFriend = friend }
-                        .contextMenu {
-                            Button("Remove Friend", role: .destructive) {
-                                friendsVM.removeFriend(friend)
-                            }
+                        FriendRow(friend: friend, friendsVM: friendsVM)
+                        if friend.id != filteredFriends.last?.id {
+                            Divider().background(Color(.systemGray4))
                         }
                     }
                 }
-                .refreshable { friendsVM.refreshFriends() }
-            }
-            .navigationTitle("Friends")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAddFriendSheet = true }) {
-                        Image(systemName: "person.badge.plus")
-                    }
-                }
+                .padding()
+                .background(ChillTheme.card)
+                .cornerRadius(28)
+                .padding(.horizontal)
+                .padding(.bottom, 72)
+
+                Spacer()
             }
             .sheet(isPresented: $showAddFriendSheet) {
                 AddFriendView(friendsVM: friendsVM)
@@ -104,5 +107,71 @@ struct FriendsView: View {
                 FriendDetailView(friend: friend, friendsVM: friendsVM)
             }
         }
+        .navigationBarHidden(true)
+    }
+}
+
+// MARK: - Friend Row
+
+struct FriendRow: View {
+    let friend: User
+    let friendsVM: FriendsViewModel
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            // Avatar (colored circle with initial)
+            Circle()
+                .fill(friend.avatarColor)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Text(friend.initial)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(friend.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white) // <-- FIXED: Use white for name
+            }
+            Spacer()
+            // Net balance, colored two-line
+            let balance = friendsVM.balanceWith(friend: friend)
+            if balance < 0 {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("You owe \(friend.name)")
+                    Text("₹\(String(format: "%.2f", abs(balance)))")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.red)
+                .multilineTextAlignment(.trailing)
+            } else if balance > 0 {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(friend.name) owes you")
+                    Text("₹\(String(format: "%.2f", abs(balance)))")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.green)
+                .multilineTextAlignment(.trailing)
+            } else {
+                Text("Settled")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+// MARK: - User Avatar Color/Initial Helper
+
+extension User {
+    var avatarColor: Color {
+        // Assigns a consistent color based on name hash
+        let colors: [Color] = [.blue, .green, .red, .pink, .orange, .purple, .teal]
+        let hash = abs(name.hashValue)
+        return colors[hash % colors.count]
+    }
+    var initial: String {
+        String(name.prefix(1)).uppercased()
     }
 }

@@ -1,93 +1,157 @@
 import SwiftUI
 import Charts
 
+struct CategoryTotal: Identifiable {
+    let id = UUID()
+    let category: ExpenseCategory
+    let total: Double
+}
+
+struct MemberTotal: Identifiable {
+    let id = UUID()
+    let user: User
+    let total: Double
+}
+
 struct GlobalAnalyticsView: View {
     @EnvironmentObject var groupVM: GroupViewModel
 
-    // Combine all expenses from all groups
-    private var allExpenses: [Expense] {
-        groupVM.groups.flatMap { $0.expenses }
-    }
-    // Combine all users from all groups (unique by id)
-    private var allUsers: [User] {
-        Array(Set(groupVM.groups.flatMap { $0.members }))
-    }
-    // Combine all currencies used (for now, use the symbol from the first group)
-    private var currencySymbol: String {
-        groupVM.groups.first?.currency.symbol ?? "$"
-    }
-    // Analytics calculations
-    private var categoryTotals: [(category: ExpenseCategory, total: Double)] {
-        var dict: [ExpenseCategory: Double] = [:]
-        for expense in allExpenses {
-            dict[expense.category, default: 0] += expense.amount
-        }
-        return dict.map { ($0.key, $0.value) }.sorted(by: { $0.total > $1.total })
-    }
-    private var memberTotals: [(user: User, total: Double)] {
-        var dict: [User: Double] = [:]
-        for expense in allExpenses {
-            dict[expense.paidBy, default: 0] += expense.amount
-        }
-        return dict.map { ($0.key, $0.value) }.sorted(by: { $0.total > $1.total })
-    }
-    private var totalSpent: Double {
-        allExpenses.reduce(0) { $0 + $1.amount }
-    }
-    private var averagePerMember: Double {
-        guard !allUsers.isEmpty else { return 0 }
-        return totalSpent / Double(allUsers.count)
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Global Analytics")
-                .font(.title2)
-                .bold()
-                .padding(.top, 8)
+        // Prepare data
+        let allExpenses: [Expense] = groupVM.groups.flatMap { $0.expenses }
+        let allUsers: [User] = Array(Set(groupVM.groups.flatMap { $0.members }))
+        let currencySymbol: String = groupVM.groups.first?.currency.symbol ?? "$"
 
-            GroupBox(label: Text("Summary").font(.headline)) {
-                VStack(alignment: .leading, spacing: 4) {
-                    let totalSpentString = String(format: "%.2f", totalSpent)
-                    let averagePerMemberString = String(format: "%.2f", averagePerMember)
-                    Text("Total spent: \(currencySymbol)\(totalSpentString)")
-                    Text("Total expenses: \(allExpenses.count)")
-                    Text("Unique members: \(allUsers.count)")
-                    Text("Average per member: \(currencySymbol)\(averagePerMemberString)")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+        let categoryTotals: [CategoryTotal] = {
+            var dict = [ExpenseCategory: Double]()
+            for exp in allExpenses {
+                dict[exp.category, default: 0] += exp.amount
             }
+            let array = dict.map { CategoryTotal(category: $0.key, total: $0.value) }
+            return array.sorted { $0.total > $1.total }
+        }()
 
-            if !categoryTotals.isEmpty {
-                GroupBox(label: Text("By Category").font(.headline)) {
-                    Chart(categoryTotals, id: \.category) { item in
-                        BarMark(
-                            x: .value("Category", item.category.displayName),
-                            y: .value("Amount", item.total)
-                        )
-                        .foregroundStyle(Color.blue)
-                    }
-                    .frame(height: 200)
-                    .chartYAxisLabel("Amount")
-                    .chartXAxisLabel("Category")
-                }
+        let memberTotals: [MemberTotal] = {
+            var dict = [User: Double]()
+            for exp in allExpenses {
+                dict[exp.paidBy, default: 0] += exp.amount
             }
+            let array = dict.map { MemberTotal(user: $0.key, total: $0.value) }
+            return array.sorted { $0.total > $1.total }
+        }()
 
-            if !memberTotals.isEmpty {
-                GroupBox(label: Text("By Payer").font(.headline)) {
-                    Chart(memberTotals, id: \.user) { item in
-                        BarMark(
-                            x: .value("Member", item.user.name),
-                            y: .value("Amount", item.total)
-                        )
-                        .foregroundStyle(Color.green)
+        let totalSpent = allExpenses.reduce(0) { $0 + $1.amount }
+        let averagePerMember = allUsers.isEmpty ? 0 : totalSpent / Double(allUsers.count)
+        let totalSpentString = String(format: "%.2f", totalSpent)
+        let averagePerMemberString = String(format: "%.2f", averagePerMember)
+
+        return ZStack {
+            ChillTheme.background.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header
+                    Text("Global Analytics")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.top, 20)
+                        .padding(.bottom, 8)
+
+                    // Summary Card
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Summary")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Text("Total spent: \(currencySymbol)\(totalSpentString)").foregroundColor(.white)
+                        Text("Total expenses: \(allExpenses.count)").foregroundColor(.white)
+                        Text("Unique members: \(allUsers.count)").foregroundColor(.white)
+                        Text("Average per member: \(currencySymbol)\(averagePerMemberString)").foregroundColor(.white)
                     }
-                    .frame(height: 200)
-                    .chartYAxisLabel("Amount")
-                    .chartXAxisLabel("Member")
+                    .padding()
+                    .background(ChillTheme.card)
+                    .cornerRadius(20)
+
+                    // Category Chart
+                    if !categoryTotals.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("By Category")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Chart(categoryTotals) { item in
+                                BarMark(
+                                    x: .value("Category", item.category.displayName),
+                                    y: .value("Amount", item.total)
+                                )
+                                .foregroundStyle(Color.blue)
+                            }
+                            .chartXAxis {
+                                AxisMarks(position: .bottom) { value in
+                                    AxisValueLabel() {
+                                        if let cat = value.as(String.self) {
+                                            Text(cat).foregroundColor(.white)
+                                        }
+                                    }
+                                }
+                            }
+                            .chartYAxis {
+                                AxisMarks(position: .leading) { value in
+                                    AxisValueLabel() {
+                                        if let num = value.as(Double.self) {
+                                            Text(String(format: "%.0f", num)).foregroundColor(.white)
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(height: 200)
+                            .background(Color.clear)
+                        }
+                        .padding()
+                        .background(ChillTheme.card)
+                        .cornerRadius(20)
+                    }
+
+                    // Member Chart
+                    if !memberTotals.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("By Payer")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Chart(memberTotals) { item in
+                                BarMark(
+                                    x: .value("Member", item.user.name),
+                                    y: .value("Amount", item.total)
+                                )
+                                .foregroundStyle(Color.green)
+                            }
+                            .chartXAxis {
+                                AxisMarks(position: .bottom) { value in
+                                    AxisValueLabel() {
+                                        if let name = value.as(String.self) {
+                                            Text(name).foregroundColor(.white)
+                                        }
+                                    }
+                                }
+                            }
+                            .chartYAxis {
+                                AxisMarks(position: .leading) { value in
+                                    AxisValueLabel() {
+                                        if let num = value.as(Double.self) {
+                                            Text(String(format: "%.0f", num)).foregroundColor(.white)
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(height: 200)
+                            .background(Color.clear)
+                        }
+                        .padding()
+                        .background(ChillTheme.card)
+                        .cornerRadius(20)
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.bottom, 24)
             }
         }
-        .padding(.bottom)
+        .preferredColorScheme(.dark)
     }
 }

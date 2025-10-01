@@ -5,20 +5,28 @@ class FriendsViewModel: ObservableObject {
     static let shared = FriendsViewModel()
     @Published var friends: [User] = []
     @Published var pendingInvites: [Invite] = []
+    @Published var directExpenses: [Expense] = []
+    var currentUser: User = User(id: UUID(), name: "You", email: "me@mail.com") // Replace with real current user
 
     /// Sync friends with all unique members from all groups.
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
-        // Fix: Publish on main queue to avoid SwiftUI warning
         DispatchQueue.main.async {
             self.friends = Array(allUsers).sorted { $0.name < $1.name }
         }
     }
 
-    // Mock balances for display purposes
     func balanceWith(friend: User) -> Double {
-        // Replace with your actual logic
-        return Double.random(in: -200...300)
+        let expenses = allExpensesWith(friend: friend)
+        var net: Double = 0
+        for expense in expenses {
+            if expense.paidBy == currentUser {
+                net += expense.amount / Double(expense.participants.count)
+            } else if expense.paidBy == friend {
+                net -= expense.amount / Double(expense.participants.count)
+            }
+        }
+        return net
     }
 
     func balanceString(_ bal: Double, friend: User) -> String {
@@ -46,7 +54,6 @@ class FriendsViewModel: ObservableObject {
     }
 
     func addOrInviteFriend(identifier: String, completion: @escaping (Result<Bool, Error>) -> Void) {
-        // Mock: If email ends with @mail.com, add; else invite
         if identifier.lowercased().hasSuffix("@mail.com") {
             friends.append(User(id: UUID(), name: identifier.capitalized, email: identifier))
             completion(.success(true))
@@ -65,29 +72,58 @@ class FriendsViewModel: ObservableObject {
     }
 
     func historyWith(friend: User) -> [ActivityEntry] {
-        // Mock history
-        return [
-            ActivityEntry(id: UUID(), text: "You paid \(friend.name) ₹200", date: Date().addingTimeInterval(-86400)),
-            ActivityEntry(id: UUID(), text: "\(friend.name) paid you ₹100", date: Date().addingTimeInterval(-172800))
-        ]
+        let directExpenseHistory: [ActivityEntry] = directExpenses
+            .filter { $0.participants.contains(friend) }
+            .map { expense in
+                let whoPaid = expense.paidBy == currentUser ? "You" : expense.paidBy.name
+                return ActivityEntry(
+                    id: expense.id,
+                    text: "\(whoPaid) paid \(expense.participants.map { $0.name }.joined(separator: ", ")) ₹\(String(format: "%.2f", expense.amount)) for \(expense.title)",
+                    date: expense.date
+                )
+            }
+        return directExpenseHistory.sorted { $0.date > $1.date }
+    }
+
+    func allExpensesWith(friend: User) -> [Expense] {
+        let direct = directExpenses.filter { ($0.paidBy == friend || $0.paidBy == currentUser) && $0.participants.contains(friend) }
+        // Optionally: Merge with group expenses for richer history
+        return direct.sorted { $0.date > $1.date }
     }
 
     func addDirectExpense(to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
-        // Add to history, update balances etc.
+        let expense = Expense(
+            id: UUID(),
+            title: description,
+            amount: amount,
+            paidBy: paidByMe ? currentUser : friend,
+            participants: [currentUser, friend],
+            date: date,
+            groupID: nil
+        )
+        directExpenses.append(expense)
+    }
+
+    func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
+        if let idx = directExpenses.firstIndex(where: { $0.id == expense.id }) {
+            directExpenses[idx].title = description
+            directExpenses[idx].amount = amount
+            directExpenses[idx].paidBy = paidByMe ? currentUser : friend
+            directExpenses[idx].date = date
+        }
     }
 
     func settleUpWith(friend: User) {
-        // Logic to settle up
+        // Add your settle up logic here
     }
 }
 
-// Basic models (do NOT redeclare User here!)
-struct Invite: Identifiable {
+struct Invite: Identifiable, Codable, Hashable {
     let id: UUID
     let email: String
 }
 
-struct ActivityEntry: Identifiable {
+struct ActivityEntry: Identifiable, Codable, Hashable {
     let id: UUID
     let text: String
     let date: Date

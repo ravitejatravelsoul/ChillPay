@@ -12,9 +12,9 @@ struct Group: Identifiable, Hashable, Codable {
     var colorName: String
     var iconName: String
     var adjustments: [Adjustment]
-    var simplifyDebts: Bool // <-- This property is always present!
+    var simplifyDebts: Bool
 
-    /// Explicit memberwise initializer.
+    // Explicit memberwise initializer.
     init(
         id: UUID = UUID(),
         name: String,
@@ -27,7 +27,7 @@ struct Group: Identifiable, Hashable, Codable {
         colorName: String = "blue",
         iconName: String = "person.3.fill",
         adjustments: [Adjustment] = [],
-        simplifyDebts: Bool = false // <-- Default to false
+        simplifyDebts: Bool = false
     ) {
         self.id = id
         self.name = name

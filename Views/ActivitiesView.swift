@@ -11,34 +11,41 @@ struct ActivitiesView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    GlobalAnalyticsView()
-                        .environmentObject(groupVM)
-                        .padding(.horizontal)
-
-                    Divider()
-
-                    Text("Activity Timeline")
-                        .font(.title2)
-                        .bold()
-                        .padding(.horizontal)
-
-                    if allActivities.isEmpty {
-                        Text("No activities yet.")
-                            .foregroundColor(.secondary)
+            ZStack {
+                ChillTheme.background.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Use environment injection for GlobalAnalyticsView, NOT initializer
+                        GlobalAnalyticsView()
+                            .environmentObject(groupVM)
                             .padding(.horizontal)
-                    } else {
-                        ForEach(allActivities) { activity in
-                            ActivityRowView(activity: activity)
+
+                        Divider()
+                            .background(Color.white.opacity(0.3))
+
+                        Text("Activity Timeline")
+                            .font(.title2)
+                            .bold()
+                            .foregroundColor(.white)
+                            .padding(.horizontal)
+
+                        if allActivities.isEmpty {
+                            Text("No activities yet.")
+                                .foregroundColor(.white.opacity(0.6))
                                 .padding(.horizontal)
-                                .padding(.vertical, 4)
+                        } else {
+                            ForEach(allActivities) { activity in
+                                ActivityRowView(activity: activity)
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 4)
+                            }
                         }
                     }
+                    .padding(.top)
                 }
-                .padding(.top)
             }
             .navigationTitle("Activities")
+            .preferredColorScheme(.dark)
         }
     }
 }
@@ -52,13 +59,15 @@ struct ActivityRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(activity.text)
                     .font(.body)
+                    .foregroundColor(.white)
                 Text(activity.date, style: .date)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.7))
             }
             Spacer()
         }
-        .background(Color(.systemGray6))
+        .padding(8)
+        .background(ChillTheme.card)
         .cornerRadius(8)
     }
 }

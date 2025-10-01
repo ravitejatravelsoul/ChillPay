@@ -68,38 +68,8 @@ struct DashboardView: View {
                 
                 Spacer()
             }
-            // Floating Add Button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        // Add Expense action
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(LinearGradient(
-                                    gradient: Gradient(colors: [Color.green.opacity(0.8), Color.green]),
-                                    startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 72, height: 72)
-                                .shadow(color: Color.green.opacity(0.4), radius: 10, x: 0, y: 4)
-                            Image(systemName: "plus")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    .padding(.bottom, 8)
-                    .padding(.trailing, 8)
-                }
-            }
         }
         .navigationBarHidden(true)
-        .overlay(
-            VStack {
-                Spacer()
-                CustomTabBar()
-            }
-        )
     }
     
     // MARK: - Helper for Indian currency formatting
@@ -164,38 +134,4 @@ struct ActivityItem: Identifiable {
     let icon: String
     let label: String
     let amount: Int
-}
-
-struct CustomTabBar: View {
-    var body: some View {
-        HStack {
-            Spacer()
-            TabBarButton(icon: "house.fill", isSelected: true)
-            Spacer()
-            TabBarButton(icon: "person.2.fill", isSelected: false)
-            Spacer()
-            TabBarButton(icon: "message.fill", isSelected: false)
-            Spacer()
-            TabBarButton(icon: "gearshape.fill", isSelected: false)
-            Spacer()
-        }
-        .padding(.vertical, 10)
-        .background(ChillTheme.tabBar)
-        .cornerRadius(24)
-        .padding(.horizontal, 24)
-        .shadow(color: .black.opacity(0.13), radius: 6, x: 0, y: 2)
-    }
-}
-
-struct TabBarButton: View {
-    let icon: String
-    let isSelected: Bool
-    var body: some View {
-        Image(systemName: icon)
-            .font(.system(size: 26, weight: .medium))
-            .foregroundColor(isSelected ? ChillTheme.accent : ChillTheme.softGray)
-            .frame(width: 40, height: 40)
-            .background(isSelected ? ChillTheme.accent.opacity(0.13) : Color.clear)
-            .cornerRadius(14)
-    }
 }

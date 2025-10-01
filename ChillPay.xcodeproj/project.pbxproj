@@ -39,6 +39,10 @@
 		3A80FCF42E89A0180093D65A /* GroupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCF32E89A0180093D65A /* GroupDetailView.swift */; };
 		3A80FCF62E89A7B10093D65A /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCF52E89A7B10093D65A /* DashboardView.swift */; };
 		3A80FCF82E8A1B610093D65A /* GroupSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCF72E8A1B600093D65A /* GroupSettingsSheet.swift */; };
+		3A80FCFA2E8B484B0093D65A /* AppScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCF92E8B484B0093D65A /* AppScaffold.swift */; };
+		3A80FCFC2E8B4DD10093D65A /* GlobalSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFB2E8B4DD10093D65A /* GlobalSettingsSheet.swift */; };
+		3A80FCFE2E8B5B7C0093D65A /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFD2E8B5B7C0093D65A /* CustomTabBar.swift */; };
+		3A80FD002E8B87800093D65A /* UIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFF2E8B87800093D65A /* UIHelpers.swift */; };
 		3AD5E56D2E7E669000FAE979 /* ChillPayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */; };
 		3AD5E5762E7E67B200FAE979 /* ColorHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5752E7E67B200FAE979 /* ColorHelpers.swift */; };
 		3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5772E7E67D100FAE979 /* ExpenseDetailView.swift */; };
@@ -106,6 +110,10 @@
 		3A80FCF32E89A0180093D65A /* GroupDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupDetailView.swift; sourceTree = "<group>"; };
 		3A80FCF52E89A7B10093D65A /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3A80FCF72E8A1B600093D65A /* GroupSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSettingsSheet.swift; sourceTree = "<group>"; };
+		3A80FCF92E8B484B0093D65A /* AppScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScaffold.swift; sourceTree = "<group>"; };
+		3A80FCFB2E8B4DD10093D65A /* GlobalSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSettingsSheet.swift; sourceTree = "<group>"; };
+		3A80FCFD2E8B5B7C0093D65A /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		3A80FCFF2E8B87800093D65A /* UIHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIHelpers.swift; sourceTree = "<group>"; };
 		3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChillPayApp.swift; sourceTree = "<group>"; };
 		3AD5E5752E7E67B200FAE979 /* ColorHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorHelpers.swift; sourceTree = "<group>"; };
 		3AD5E5772E7E67D100FAE979 /* ExpenseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetailView.swift; sourceTree = "<group>"; };
@@ -208,6 +216,9 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A80FCFD2E8B5B7C0093D65A /* CustomTabBar.swift */,
+				3A80FCFB2E8B4DD10093D65A /* GlobalSettingsSheet.swift */,
+				3A80FCF92E8B484B0093D65A /* AppScaffold.swift */,
 				3A80FCF72E8A1B600093D65A /* GroupSettingsSheet.swift */,
 				3A80FCF52E89A7B10093D65A /* DashboardView.swift */,
 				3A80FCF32E89A0180093D65A /* GroupDetailView.swift */,
@@ -259,6 +270,7 @@
 		3A11D70A2E73FDB1004949B6 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				3A80FCFF2E8B87800093D65A /* UIHelpers.swift */,
 				3A80FCF12E8999C80093D65A /* ExportManager.swift */,
 				3AD5E57F2E7E688400FAE979 /* NotificationManager.swift */,
 				3A11D7172E73FF03004949B6 /* NotificationService.swift */,
@@ -414,6 +426,7 @@
 				3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */,
 				3A11D7182E740104004949B6 /* ContentView.swift in Sources */,
 				3AD5E5862E7E6A1500FAE979 /* Adjustment.swift in Sources */,
+				3A80FCFE2E8B5B7C0093D65A /* CustomTabBar.swift in Sources */,
 				3A80FCE82E888E1F0093D65A /* FriendDetailView.swift in Sources */,
 				3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */,
 				3A80FCEA2E888E4A0093D65A /* AddDirectExpenseView.swift in Sources */,
@@ -431,10 +444,12 @@
 				3A80FCF42E89A0180093D65A /* GroupDetailView.swift in Sources */,
 				3A11D71F2E740140004949B6 /* DummyData.swift in Sources */,
 				3A11D71B2E740122004949B6 /* ExpenseListView.swift in Sources */,
+				3A80FCFA2E8B484B0093D65A /* AppScaffold.swift in Sources */,
 				3AD5E57D2E7E684900FAE979 /* AvatarView.swift in Sources */,
 				3AD5E57E2E7E684900FAE979 /* AnalyticsView.swift in Sources */,
 				3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */,
 				3A80FCF62E89A7B10093D65A /* DashboardView.swift in Sources */,
+				3A80FCFC2E8B4DD10093D65A /* GlobalSettingsSheet.swift in Sources */,
 				3A80FCE62E888DDE0093D65A /* AddFriendView.swift in Sources */,
 				3A80FCE42E886DF30093D65A /* GroupSummarySection.swift in Sources */,
 				3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */,
@@ -450,6 +465,7 @@
 				3A11D7202E740147004949B6 /* AuthService.swift in Sources */,
 				3A11D71A2E74011C004949B6 /* AddGroupView.swift in Sources */,
 				3A80FCF82E8A1B610093D65A /* GroupSettingsSheet.swift in Sources */,
+				3A80FD002E8B87800093D65A /* UIHelpers.swift in Sources */,
 				3A80FCE22E886AF90093D65A /* GroupSummaryView.swift in Sources */,
 				3A11D7262E740373004949B6 /* StorageManager.swift in Sources */,
 				3AD5E5802E7E688400FAE979 /* NotificationManager.swift in Sources */,

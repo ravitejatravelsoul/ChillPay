@@ -4,67 +4,181 @@ struct FriendDetailView: View {
     let friend: User
     @ObservedObject var friendsVM: FriendsViewModel
     @State private var showAddExpense = false
-
+    @State private var showEditExpense = false
+    @State private var selectedExpense: Expense?
+    
+    var allExpensesWithFriend: [Expense] {
+        friendsVM.allExpensesWith(friend: friend)
+    }
+    
     var body: some View {
-        NavigationView {
-            VStack(alignment: .leading, spacing: 24) {
-                HStack {
-                    AvatarView(user: friend)
-                        .frame(width: 60, height: 60)
-                    VStack(alignment: .leading) {
-                        Text(friend.name).font(.title2).bold()
-                        if let email = friend.email {
-                            Text(email).font(.footnote).foregroundColor(.secondary)
+        ZStack {
+            ChillTheme.background.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Profile Card
+                    HStack(spacing: 18) {
+                        AvatarView(user: friend)
+                            .frame(width: 64, height: 64)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(friend.name)
+                                .font(.title2).bold()
+                                .foregroundColor(.white)
+                            if let email = friend.email {
+                                Text(email)
+                                    .font(.footnote)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(ChillTheme.card)
+                    .cornerRadius(24)
+
+                    // Balance Card
+                    let balance = friendsVM.balanceWith(friend: friend)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Balance with \(friend.name):")
+                            .foregroundColor(.gray)
+                        Text(friendsVM.balanceString(balance, friend: friend))
+                            .foregroundColor(friendsVM.balanceColor(balance))
+                            .font(.title.bold())
+                    }
+                    .padding()
+                    .background(ChillTheme.card)
+                    .cornerRadius(24)
+
+                    // Actions
+                    HStack(spacing: 16) {
+                        Button(action: { showAddExpense = true }) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add Expense")
+                            }
+                            .font(.system(size: 18, weight: .semibold))
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(16)
+                        }
+                        if balance != 0 {
+                            Button(action: { friendsVM.settleUpWith(friend: friend) }) {
+                                HStack {
+                                    Image(systemName: "arrow.right.arrow.left.circle")
+                                    Text("Settle Up")
+                                }
+                                .font(.system(size: 18, weight: .semibold))
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 24)
+                                .background(Color(.systemGray5))
+                                .foregroundColor(.gray)
+                                .cornerRadius(16)
+                            }
                         }
                     }
-                    Spacer()
-                }
-                // Balance
-                let balance = friendsVM.balanceWith(friend: friend)
-                HStack {
-                    Text("Balance with \(friend.name):")
-                    Text(friendsVM.balanceString(balance, friend: friend))
-                        .foregroundColor(friendsVM.balanceColor(balance))
-                        .font(.headline)
-                }
 
-                // Actions
-                HStack {
-                    Button(action: { showAddExpense = true }) {
-                        Label("Add Expense", systemImage: "plus.circle")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    if balance != 0 {
-                        Button(action: { friendsVM.settleUpWith(friend: friend) }) {
-                            Label("Settle Up", systemImage: "arrow.right.arrow.left.circle")
+                    // Transaction History Card (now showing all expenses)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Expenses with \(friend.name)")
+                            .font(.title3).bold()
+                            .foregroundColor(.white)
+
+                        if allExpensesWithFriend.isEmpty {
+                            Text("No expenses yet.")
+                                .foregroundColor(.gray)
+                                .padding(.vertical)
+                        } else {
+                            ForEach(allExpensesWithFriend) { expense in
+                                FriendExpenseRow(
+                                    expense: expense,
+                                    currentUser: friendsVM.currentUser,
+                                    onEdit: { selectedExpense = expense }
+                                )
+                                Divider().background(Color(.systemGray4))
+                            }
                         }
-                        .buttonStyle(.bordered)
                     }
+                    .padding()
+                    .background(ChillTheme.card)
+                    .cornerRadius(24)
                 }
-                .padding(.bottom)
-
-                // Transaction history
-                Text("History")
-                    .font(.title3).bold()
-                List(friendsVM.historyWith(friend: friend)) { entry in
-                    VStack(alignment: .leading) {
-                        Text(entry.text)
-                        Text(entry.date, style: .date)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                .padding()
             }
-            .padding()
             .navigationTitle(friend.name)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") { }
+                    Button("Close") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.green)
                 }
             }
             .sheet(isPresented: $showAddExpense) {
-                AddDirectExpenseView(friend: friend, friendsVM: friendsVM)
+                AddDirectExpenseView(
+                    friend: friend,
+                    friendsVM: friendsVM,
+                    expenseToEdit: nil // Add mode
+                )
+            }
+            .sheet(item: $selectedExpense) { expense in
+                AddDirectExpenseView(
+                    friend: friend,
+                    friendsVM: friendsVM,
+                    expenseToEdit: expense // Edit mode
+                )
             }
         }
+    }
+    @Environment(\.presentationMode) private var presentationMode
+}
+
+// MARK: - FriendExpenseRow (no duplicate name!)
+
+struct FriendExpenseRow: View {
+    let expense: Expense
+    let currentUser: User
+    var onEdit: (() -> Void)? = nil
+    
+    var isDirect: Bool { expense.groupID == nil }
+    var canEdit: Bool { expense.paidBy.id == currentUser.id }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(isDirect ? Color.green : Color.blue)
+                .frame(width: 36, height: 36)
+                .overlay(
+                    Text(isDirect ? "D" : "G")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(expense.title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Text("Amount: ₹\(String(format: "%.2f", expense.amount))")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Text("Paid by \(expense.paidBy.name)\(isDirect ? "" : " (group)")")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text(expense.date, style: .date)
+                    .font(.caption2)
+                    .foregroundColor(.gray)
+            }
+            Spacer()
+            if canEdit, let onEdit = onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.title2)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 6)
     }
 }
