@@ -1,17 +1,61 @@
 import SwiftUI
 
 struct DashboardView: View {
-    // Demo data
-    let totalBalance: Int = 12300
-    let youOwe: Int = 2500
-    let youAreOwed: Int = 39000
-    let activities: [ActivityItem] = [
-        .init(icon: "cup.and.saucer.fill", label: "Coffee with Sara", amount: -350),
-        .init(icon: "fork.knife", label: "Dinner at Pind Balluchi", amount: 1200),
-        .init(icon: "house.fill", label: "Rent - July", amount: -25000),
-        .init(icon: "cart.fill", label: "Groceries", amount: 800)
-    ]
-    
+    @Binding var selectedTab: MainTab
+    @EnvironmentObject var groupVM: GroupViewModel
+    @EnvironmentObject var friendsVM: FriendsViewModel
+
+    var currentUser: User? {
+        friendsVM.friends.first
+    }
+
+    var allExpenses: [Expense] {
+        groupVM.groups.flatMap { $0.expenses }
+    }
+
+    var allActivities: [Activity] {
+        groupVM.groups.flatMap { $0.activity }
+            .sorted(by: { $0.date > $1.date })
+    }
+
+    var allBalances: [User: Double] {
+        var balances: [User: Double] = [:]
+        for group in groupVM.groups {
+            let expenseVM = ExpenseViewModel(groupVM: groupVM)
+            let groupBalances = expenseVM.getBalances(for: group)
+            for (user, balance) in groupBalances {
+                balances[user, default: 0.0] += balance
+            }
+        }
+        return balances
+    }
+
+    var totalBalance: Double {
+        guard let user = currentUser else { return 0 }
+        return allBalances[user] ?? 0
+    }
+    var youOwe: Double {
+        guard let user = currentUser else { return 0 }
+        let value = allBalances[user] ?? 0
+        return value < 0 ? abs(value) : 0
+    }
+    var youAreOwed: Double {
+        guard let user = currentUser else { return 0 }
+        let value = allBalances[user] ?? 0
+        return value > 0 ? value : 0
+    }
+    var currencySymbol: String {
+        groupVM.groups.first?.currency.symbol ?? "$"
+    }
+    // Optionally use a generalized formatter for all currencies
+    func formattedAmount(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencySymbol = currencySymbol
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: amount)) ?? "\(currencySymbol)\(String(format: "%.2f", amount))"
+    }
+
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
@@ -20,13 +64,13 @@ struct DashboardView: View {
                     Text("Dashboard")
                         .font(ChillTheme.headerFont)
                         .foregroundColor(ChillTheme.darkText)
-                    
+
                     // Balance gradient card
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Total Balance")
                             .foregroundColor(.white.opacity(0.85))
                             .font(.headline)
-                        Text("₹\(Self.indianCurrencyString(totalBalance))")
+                        Text(formattedAmount(totalBalance))
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                     }
@@ -34,50 +78,49 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(ChillTheme.dashboardGradient)
                     .cornerRadius(ChillTheme.cardRadius)
-                    
+
                     // Owe Chips
                     HStack(spacing: 20) {
-                        DashboardChip(label: "You Owe", value: "₹\(Self.indianCurrencyString(youOwe))", color: ChillTheme.chipOwe)
-                        DashboardChip(label: "You Are Owed", value: "₹\(Self.indianCurrencyString(youAreOwed))", color: ChillTheme.chipOwed)
+                        DashboardChip(label: "You Owe", value: formattedAmount(youOwe), color: ChillTheme.chipOwe)
+                        DashboardChip(label: "You Are Owed", value: formattedAmount(youAreOwed), color: ChillTheme.chipOwed)
                     }
                 }
                 .padding(.horizontal)
-                
-                // Recent Activity
+
+                // Recent Activity - Only this part scrolls!
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("Recent Activity")
                             .font(.headline)
                             .foregroundColor(ChillTheme.darkText)
                         Spacer()
-                        Button(action: {}) {
+                        Button(action: {
+                            selectedTab = .activity // Switch to Activities tab!
+                        }) {
                             Text("View All")
                                 .font(.subheadline)
                                 .foregroundColor(.green)
                         }
                     }
-                    ForEach(activities) { item in
-                        ActivityRow(item: item)
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(allActivities.prefix(30)) { activity in
+                                ActivityRowV2(activity: activity)
+                            }
+                        }
                     }
+                    .frame(height: 340) // Adjust for your UI, e.g. 5-8 rows visible
                 }
                 .padding()
                 .background(ChillTheme.card)
                 .cornerRadius(ChillTheme.cardRadius)
                 .padding(.horizontal)
                 .padding(.bottom, 72)
-                
-                Spacer()
+
+                Spacer(minLength: 0)
             }
         }
         .navigationBarHidden(true)
-    }
-    
-    // MARK: - Helper for Indian currency formatting
-    static func indianCurrencyString(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "en_IN")
-        formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: amount)) ?? "\(amount)"
     }
 }
 
@@ -105,8 +148,8 @@ struct DashboardChip: View {
     }
 }
 
-struct ActivityRow: View {
-    let item: ActivityItem
+struct ActivityRowV2: View {
+    let activity: Activity
 
     var body: some View {
         HStack(spacing: 14) {
@@ -114,24 +157,19 @@ struct ActivityRow: View {
                 .fill(ChillTheme.accent.opacity(0.14))
                 .frame(width: 38, height: 38)
                 .overlay(
-                    Image(systemName: item.icon)
+                    Image(systemName: "sparkles")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(ChillTheme.accent)
                 )
-            Text(item.label)
-                .foregroundColor(ChillTheme.darkText)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(activity.text)
+                    .foregroundColor(ChillTheme.darkText)
+                Text(activity.date, style: .date)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             Spacer()
-            Text(item.amount < 0 ? "- ₹\(DashboardView.indianCurrencyString(abs(item.amount)))" : "+ ₹\(DashboardView.indianCurrencyString(item.amount))")
-                .font(.headline)
-                .foregroundColor(item.amount < 0 ? ChillTheme.chipOwe : ChillTheme.accent)
         }
         .padding(.vertical, 6)
     }
-}
-
-struct ActivityItem: Identifiable {
-    let id = UUID()
-    let icon: String
-    let label: String
-    let amount: Int
 }

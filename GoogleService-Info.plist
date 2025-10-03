@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyA4BFfqfgAHNHbpPkA5duaAM0T4K3jqWdo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>697945236181</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.Raviteja.chillpay</string>
+	<key>PROJECT_ID</key>
+	<string>chillpay-f2598</string>
+	<key>STORAGE_BUCKET</key>
+	<string>chillpay-f2598.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:697945236181:ios:45825d5d84a8b88168f85c</string>
+</dict>
+</plist>

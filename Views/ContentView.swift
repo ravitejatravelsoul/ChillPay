@@ -12,7 +12,7 @@ struct ContentView: View {
     var mainContent: some View {
         switch selectedTab {
         case .home:
-            DashboardView()
+            DashboardView(selectedTab: $selectedTab)
                 .environmentObject(groupVM)
                 .environmentObject(friendsVM)
                 .padding(.bottom, 72)
@@ -32,9 +32,9 @@ struct ContentView: View {
                     .environmentObject(groupVM)
             }
             .padding(.bottom, 72)
-        case .profile:    // <-- Changed from .settings to .profile
+        case .profile:
             NavigationView {
-                ProfileView()  // <-- Replace with your actual profile view
+                ProfileView()
             }
             .padding(.bottom, 72)
         }
