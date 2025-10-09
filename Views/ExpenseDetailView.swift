@@ -27,7 +27,8 @@ struct ExpenseDetailView: View {
         if let first = group.members.first {
             _selectedAuthor = State(initialValue: first)
         } else {
-            _selectedAuthor = State(initialValue: User(id: UUID(), name: ""))
+            // FIX: id should be String, not UUID
+            _selectedAuthor = State(initialValue: User(id: UUID().uuidString, name: ""))
         }
     }
 

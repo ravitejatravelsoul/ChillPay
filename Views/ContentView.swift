@@ -16,22 +16,26 @@ struct ContentView: View {
                 .environmentObject(groupVM)
                 .environmentObject(friendsVM)
                 .padding(.bottom, 72)
+
         case .friends:
             NavigationView {
                 FriendsView(friendsVM: friendsVM)
             }
             .padding(.bottom, 72)
+
         case .groups:
             NavigationView {
                 GroupListView(groupVM: groupVM, friendsVM: friendsVM)
             }
             .padding(.bottom, 72)
+
         case .activity:
             NavigationView {
                 ActivitiesView()
                     .environmentObject(groupVM)
             }
             .padding(.bottom, 72)
+
         case .profile:
             NavigationView {
                 ProfileView()

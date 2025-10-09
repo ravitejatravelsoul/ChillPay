@@ -1,10 +1,11 @@
 import Foundation
+import Combine
 
-class GroupViewModel: ObservableObject {
+final class GroupViewModel: ObservableObject {
     @Published var groups: [Group] = [] {
         didSet {
             StorageManager.shared.saveGroups(groups)
-            friendsVM?.syncWithGroups(groups) // Keeps friends always in sync!
+            friendsVM?.syncWithGroups(groups)
         }
     }
 
@@ -13,7 +14,7 @@ class GroupViewModel: ObservableObject {
     init(friendsVM: FriendsViewModel? = nil) {
         self.friendsVM = friendsVM
         self.groups = StorageManager.shared.loadGroups()
-        friendsVM?.syncWithGroups(groups) // Initial sync on load
+        friendsVM?.syncWithGroups(groups)
     }
 
     // MARK: - Group Management
@@ -26,10 +27,17 @@ class GroupViewModel: ObservableObject {
     func updateGroup(_ group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         groups[index] = group
+        logActivity(for: group.id, text: "Updated group \(group.name)")
     }
 
     func deleteGroup(_ group: Group) {
         groups.removeAll { $0.id == group.id }
+    }
+
+    func renameGroup(_ group: Group, newName: String) {
+        guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
+        groups[index].name = newName
+        logActivity(for: group.id, text: "Renamed group to \(newName)")
     }
 
     func addMember(_ user: User, to group: Group) {
@@ -43,27 +51,22 @@ class GroupViewModel: ObservableObject {
     func removeMember(_ user: User, from group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         var g = groups[index]
-        g.expenses.removeAll { expense in
-            expense.paidBy.id == user.id || expense.participants.contains(where: { $0.id == user.id })
+        g.expenses.removeAll { exp in
+            exp.paidBy.id == user.id ||
+            exp.participants.contains(where: { $0.id == user.id })
         }
         g.members.removeAll { $0.id == user.id }
         groups[index] = g
         logActivity(for: group.id, text: "Removed member \(user.name)")
     }
 
-    func renameGroup(_ group: Group, newName: String) {
-        guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
-        groups[index].name = newName
-        logActivity(for: group.id, text: "Renamed group to \(newName)")
-    }
-
-    func logActivity(for groupID: UUID, text: String) {
+    func logActivity(for groupID: String, text: String) {
         guard let idx = groups.firstIndex(where: { $0.id == groupID }) else { return }
-        let activityEntry = Activity(id: UUID(), text: text, date: Date())
-        groups[idx].activity.append(activityEntry)
+        let entry = Activity(id: UUID(), text: text, date: Date())
+        groups[idx].activity.append(entry)
     }
 
-    // MARK: - Expense Management (per group)
+    // MARK: - Expense Management
 
     func addExpense(_ expense: Expense, to group: Group) {
         guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -73,8 +76,8 @@ class GroupViewModel: ObservableObject {
 
     func updateExpense(_ expense: Expense, in group: Group) {
         guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
-        if let expenseIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) {
-            groups[idx].expenses[expenseIdx] = expense
+        if let eIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) {
+            groups[idx].expenses[eIdx] = expense
             logActivity(for: group.id, text: "Updated expense: \(expense.title)")
         }
     }

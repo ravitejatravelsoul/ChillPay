@@ -37,6 +37,13 @@ struct AuthFlowCoordinator: View {
                 LoginView(
                     onSignup: { flowScreen = .signup },
                     onLoginSuccess: {
+                        if let userProfile = AuthService.shared.user {
+                            FriendsViewModel.shared.currentUser = User(
+                                id: userProfile.uid,
+                                name: userProfile.name,
+                                email: userProfile.email
+                            )
+                        }
                         if AuthService.shared.isEmailVerified {
                             flowScreen = .mainApp
                         } else {
@@ -68,13 +75,20 @@ struct AuthFlowCoordinator: View {
             }
         }
         .onAppear {
+            if let userProfile = AuthService.shared.user {
+                FriendsViewModel.shared.currentUser = User(
+                    id: userProfile.uid,
+                    name: userProfile.name,
+                    email: userProfile.email
+                )
+            }
             if authService.isAuthenticated && authService.isEmailVerified {
                 flowScreen = .mainApp
             }
         }
-        .onChange(of: authService.isAuthenticated) { isAuthenticated in
-            // If user logs out or is deleted, always return to login
-            if !isAuthenticated {
+        // FIX for iOS 17 onChange deprecation:
+        .onChange(of: authService.isAuthenticated) {
+            if !authService.isAuthenticated {
                 flowScreen = .login
             }
         }

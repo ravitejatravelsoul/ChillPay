@@ -7,7 +7,7 @@ struct EditGroupView: View {
     var group: Group
 
     @State private var name: String
-    @State private var selectedMemberIDs: Set<UUID>
+    @State private var selectedMemberIDs: Set<String>
     @State private var isPublic: Bool
     @State private var budgetString: String
     @State private var selectedCurrency: Currency
@@ -19,7 +19,7 @@ struct EditGroupView: View {
         self.groupVM = groupVM
         self.friendsVM = friendsVM
         _name = State(initialValue: group.name)
-        _selectedMemberIDs = State(initialValue: Set(group.members.map { $0.id }))
+        _selectedMemberIDs = State(initialValue: Set(group.members.map { $0.id })) // <--- String now
         _isPublic = State(initialValue: group.isPublic)
         if let budget = group.budget {
             _budgetString = State(initialValue: String(format: "%.2f", budget))

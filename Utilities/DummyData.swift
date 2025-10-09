@@ -2,14 +2,14 @@ import Foundation
 
 struct DummyData {
     static let sampleUsers: [User] = [
-        User(id: UUID(), name: "Alice"),
-        User(id: UUID(), name: "Bob"),
-        User(id: UUID(), name: "Charlie")
+        User(id: "user-alice", name: "Alice"),
+        User(id: "user-bob", name: "Bob"),
+        User(id: "user-charlie", name: "Charlie")
     ]
 
     static let sampleGroups: [Group] = [
         Group(
-            id: UUID(),
+            id: UUID().uuidString, // <-- id must be String, not UUID
             name: "Trip to Goa",
             members: sampleUsers,
             expenses: [],
@@ -19,7 +19,8 @@ struct DummyData {
             currency: .inr,
             colorName: "blue",
             iconName: "person.3.fill",
-            adjustments: []
+            adjustments: [],
+            simplifyDebts: false
         )
     ]
 }

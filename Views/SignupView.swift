@@ -88,8 +88,10 @@ struct SignupView: View {
     private func subscribeToKeyboardNotifications() {
         NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notif in
             if let rect = notif.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                let safeAreaBottom = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+                    .windows.first?.safeAreaInsets.bottom ?? 0
                 withAnimation {
-                    keyboardHeight = rect.height - (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0)
+                    keyboardHeight = rect.height - safeAreaBottom
                 }
             }
         }

@@ -121,7 +121,7 @@ struct AddGroupView: View {
                                             .frame(width: 28, height: 28)
                                             .overlay(
                                                 Circle()
-                                                    .stroke(selectedColorName == name ? Color.green : Color.clear, lineWidth: 2)
+                                                    .stroke(selectedColorName == name ? Color.green : Color.clear, lineWidth: selectedColorName == name ? 2 : 1)
                                             )
                                             .onTapGesture {
                                                 selectedColorName = name
@@ -214,11 +214,11 @@ struct AddGroupView: View {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         let members = trimmedNames.map { nameStr in
-            User(id: UUID(), name: nameStr)
+            User(id: UUID().uuidString, name: nameStr) // <--- id is String
         }
         let budgetValue: Double? = Double(budgetString.trimmingCharacters(in: .whitespaces))
         let group = Group(
-            id: UUID(),
+            id: UUID().uuidString, 
             name: name.trimmingCharacters(in: .whitespaces),
             members: members,
             expenses: [],

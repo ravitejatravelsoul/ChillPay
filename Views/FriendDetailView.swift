@@ -93,7 +93,7 @@ struct FriendDetailView: View {
                             ForEach(allExpensesWithFriend) { expense in
                                 FriendExpenseRow(
                                     expense: expense,
-                                    currentUser: friendsVM.currentUser,
+                                    currentUser: friendsVM.currentUser ?? User(id: UUID().uuidString, name: "Unknown", email: nil),
                                     onEdit: { selectedExpense = expense }
                                 )
                                 Divider().background(Color(.systemGray4))

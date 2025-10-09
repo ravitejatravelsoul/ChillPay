@@ -32,6 +32,14 @@ struct LoginView: View {
                 // Delay to let AuthService update isEmailVerified (ideally use completion handlers in AuthService)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     if authService.isAuthenticated {
+                        // --- SET currentUser in FriendsViewModel after login! ---
+                        if let userProfile = authService.user {
+                            FriendsViewModel.shared.currentUser = User(
+                                id: userProfile.uid,
+                                name: userProfile.name,
+                                email: userProfile.email
+                            )
+                        }
                         if authService.isEmailVerified {
                             onLoginSuccess()
                         } else {

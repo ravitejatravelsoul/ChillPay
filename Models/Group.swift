@@ -1,7 +1,7 @@
 import Foundation
 
 struct Group: Identifiable, Hashable, Codable {
-    let id: UUID
+    let id: String
     var name: String
     var members: [User]
     var expenses: [Expense]
@@ -14,9 +14,8 @@ struct Group: Identifiable, Hashable, Codable {
     var adjustments: [Adjustment]
     var simplifyDebts: Bool
 
-    // Explicit memberwise initializer.
     init(
-        id: UUID = UUID(),
+        id: String = UUID().uuidString,
         name: String,
         members: [User],
         expenses: [Expense] = [],
@@ -43,14 +42,19 @@ struct Group: Identifiable, Hashable, Codable {
         self.simplifyDebts = simplifyDebts
     }
 
-    // Custom decoder to support older saved data (unchanged)
     enum CodingKeys: String, CodingKey {
         case id, name, members, expenses, isPublic, budget, activity, currency, colorName, iconName, adjustments, simplifyDebts
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(UUID.self, forKey: .id)
+        if let idString = try? container.decode(String.self, forKey: .id) {
+            id = idString
+        } else if let uuid = try? container.decode(UUID.self, forKey: .id) {
+            id = uuid.uuidString
+        } else {
+            id = UUID().uuidString
+        }
         name = try container.decode(String.self, forKey: .name)
         members = try container.decode([User].self, forKey: .members)
         expenses = try container.decode([Expense].self, forKey: .expenses)
