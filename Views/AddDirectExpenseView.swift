@@ -18,7 +18,6 @@ struct AddDirectExpenseView: View {
         self.expenseToEdit = expenseToEdit
         _amount = State(initialValue: expenseToEdit != nil ? String(format: "%.2f", expenseToEdit!.amount) : "")
         _description = State(initialValue: expenseToEdit?.title ?? "")
-        // --- FIX: Use id comparison and optional chaining for currentUser ---
         let paidByMeInit: Bool
         if let expense = expenseToEdit,
            let currentUser = friendsVM.currentUser {

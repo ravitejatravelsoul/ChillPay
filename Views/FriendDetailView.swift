@@ -4,13 +4,12 @@ struct FriendDetailView: View {
     let friend: User
     @ObservedObject var friendsVM: FriendsViewModel
     @State private var showAddExpense = false
-    @State private var showEditExpense = false
     @State private var selectedExpense: Expense?
-    
+
     var allExpensesWithFriend: [Expense] {
         friendsVM.allExpensesWith(friend: friend)
     }
-    
+
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
@@ -36,14 +35,24 @@ struct FriendDetailView: View {
                     .background(ChillTheme.card)
                     .cornerRadius(24)
 
-                    // Balance Card
+                    // Balance Card: Always show amount
                     let balance = friendsVM.balanceWith(friend: friend)
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Balance with \(friend.name):")
                             .foregroundColor(.gray)
-                        Text(friendsVM.balanceString(balance, friend: friend))
-                            .foregroundColor(friendsVM.balanceColor(balance))
-                            .font(.title.bold())
+                        if balance < 0 {
+                            Text("You owe ₹\(String(format: "%.2f", abs(balance)))")
+                                .foregroundColor(.red)
+                                .font(.title.bold())
+                        } else if balance > 0 {
+                            Text("\(friend.name) owes you ₹\(String(format: "%.2f", abs(balance)))")
+                                .foregroundColor(.green)
+                                .font(.title.bold())
+                        } else {
+                            Text("Settled")
+                                .foregroundColor(.gray)
+                                .font(.title.bold())
+                        }
                     }
                     .padding()
                     .background(ChillTheme.card)
@@ -64,7 +73,9 @@ struct FriendDetailView: View {
                             .cornerRadius(16)
                         }
                         if balance != 0 {
-                            Button(action: { friendsVM.settleUpWith(friend: friend) }) {
+                            Button(action: {
+                                friendsVM.settleUpWith(friend: friend)
+                            }) {
                                 HStack {
                                     Image(systemName: "arrow.right.arrow.left.circle")
                                     Text("Settle Up")
@@ -79,7 +90,7 @@ struct FriendDetailView: View {
                         }
                     }
 
-                    // Transaction History Card (now showing all expenses)
+                    // Transaction History
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Expenses with \(friend.name)")
                             .font(.title3).bold()
@@ -135,13 +146,13 @@ struct FriendDetailView: View {
     @Environment(\.presentationMode) private var presentationMode
 }
 
-// MARK: - FriendExpenseRow (no duplicate name!)
+// MARK: - FriendExpenseRow
 
 struct FriendExpenseRow: View {
     let expense: Expense
     let currentUser: User
     var onEdit: (() -> Void)? = nil
-    
+
     var isDirect: Bool { expense.groupID == nil }
     var canEdit: Bool { expense.paidBy.id == currentUser.id }
 

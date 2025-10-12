@@ -141,6 +141,7 @@ class AuthService: ObservableObject {
             }
             self.user = self.decodeUserProfile(from: data)
             self.isAuthenticated = true
+            self.isEmailVerified = self.user?.emailVerified ?? false
         }
     }
 
@@ -152,7 +153,6 @@ class AuthService: ObservableObject {
 
     // MARK: - UserProfile Decoding
     private func decodeUserProfile(from data: [String: Any]) -> UserProfile {
-        // Manual decoding for simplicity; you can also use Codable with FirestoreDecoder
         return UserProfile(
             uid: data["uid"] as? String ?? "",
             name: data["name"] as? String ?? "",
@@ -171,5 +171,19 @@ class AuthService: ObservableObject {
             lastActivityAt: (data["lastActivityAt"] as? Timestamp)?.dateValue() ?? Date(),
             platform: data["platform"] as? String ?? "iOS"
         )
+    }
+
+    // MARK: - Set user from FirebaseAuth.User (for persistent login on relaunch)
+    func setUser(from firebaseUser: FirebaseAuth.User) {
+        let uid = firebaseUser.uid
+        // If already have the user profile in memory, skip fetch
+        if let currentUser = self.user, currentUser.uid == uid {
+            self.isAuthenticated = true
+            self.isEmailVerified = firebaseUser.isEmailVerified
+            return
+        }
+        self.isAuthenticated = true
+        self.isEmailVerified = firebaseUser.isEmailVerified
+        self.fetchUserDocument(uid: uid)
     }
 }

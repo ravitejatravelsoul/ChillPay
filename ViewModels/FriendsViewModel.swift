@@ -7,11 +7,10 @@ class FriendsViewModel: ObservableObject {
     @Published var pendingInvites: [Invite] = []
     @Published var directExpenses: [Expense] = []
     @Published var groupExpenses: [Expense] = []
-
+    
     /// IMPORTANT: Set this to the logged-in user after login/session restore!
     var currentUser: User?
-
-    /// Sync friends with all unique members from all groups and sync group expenses.
+    
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
         let allGroupExpenses = groups.flatMap { $0.expenses }
@@ -20,13 +19,13 @@ class FriendsViewModel: ObservableObject {
             self.groupExpenses = allGroupExpenses
         }
     }
-
+    
     func balanceWith(friend: User) -> Double {
         guard let currentUser = currentUser else { return 0 }
         let direct = allExpensesWith(friend: friend)
         let group = groupExpensesWith(friend: friend)
         var net: Double = 0
-
+        
         // Direct expenses
         for expense in direct {
             if expense.paidBy.id == currentUser.id {
@@ -45,7 +44,7 @@ class FriendsViewModel: ObservableObject {
         }
         return net
     }
-
+    
     func groupExpensesWith(friend: User) -> [Expense] {
         guard let currentUser = currentUser else { return [] }
         return groupExpenses.filter {
@@ -54,7 +53,7 @@ class FriendsViewModel: ObservableObject {
             $0.participants.contains(where: { $0.id == friend.id })
         }
     }
-
+    
     func balanceString(_ bal: Double, friend: User) -> String {
         if bal > 0 {
             return "\(friend.name) owes you ₹\(String(format: "%.2f", abs(bal)))"
@@ -64,19 +63,19 @@ class FriendsViewModel: ObservableObject {
             return "Settled"
         }
     }
-
+    
     func balanceColor(_ bal: Double) -> Color {
         if bal > 0 { return .green }
         else if bal < 0 { return .red }
         else { return .secondary }
     }
-
+    
     func sortByOwesYou(sort: Bool) {
         friends.sort {
             balanceWith(friend: $0) > balanceWith(friend: $1)
         }
     }
-
+    
     func addOrInviteFriend(identifier: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         if identifier.lowercased().hasSuffix("@mail.com") {
             friends.append(User(id: UUID().uuidString, name: identifier.capitalized, email: identifier))
@@ -86,15 +85,15 @@ class FriendsViewModel: ObservableObject {
             completion(.success(false))
         }
     }
-
+    
     func removeFriend(_ friend: User) {
         friends.removeAll { $0.id == friend.id }
     }
-
+    
     func refreshFriends() {
         // Add backend sync if needed
     }
-
+    
     func historyWith(friend: User) -> [ActivityEntry] {
         guard let currentUser = currentUser else { return [] }
         let directExpenseHistory: [ActivityEntry] = directExpenses
@@ -110,7 +109,7 @@ class FriendsViewModel: ObservableObject {
         // Optionally: Add group expense history here too
         return directExpenseHistory.sorted { $0.date > $1.date }
     }
-
+    
     func allExpensesWith(friend: User) -> [Expense] {
         guard let currentUser = currentUser else { return [] }
         let direct = directExpenses.filter {
@@ -119,43 +118,55 @@ class FriendsViewModel: ObservableObject {
         }
         return direct.sorted { $0.date > $1.date }
     }
-
+    
     func addDirectExpense(to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
         guard let currentUser = currentUser else { return }
+        let curUserObj = friends.first(where: { $0.id == currentUser.id }) ?? currentUser
+        let friendObj = friends.first(where: { $0.id == friend.id }) ?? friend
         let expense = Expense(
             id: UUID(),
             title: description,
             amount: amount,
-            paidBy: paidByMe ? currentUser : friend,
-            participants: [currentUser, friend],
+            paidBy: paidByMe ? curUserObj : friendObj,
+            participants: [curUserObj, friendObj],
             date: date,
             groupID: nil
         )
         directExpenses.append(expense)
+        // --- Force objectWillChange for immediate UI update in rare edge cases ---
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
     }
-
+    
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
         guard let currentUser = currentUser else { return }
         if let idx = directExpenses.firstIndex(where: { $0.id == expense.id }) {
+            let curUserObj = friends.first(where: { $0.id == currentUser.id }) ?? currentUser
+            let friendObj = friends.first(where: { $0.id == friend.id }) ?? friend
             directExpenses[idx].title = description
             directExpenses[idx].amount = amount
-            directExpenses[idx].paidBy = paidByMe ? currentUser : friend
+            directExpenses[idx].paidBy = paidByMe ? curUserObj : friendObj
             directExpenses[idx].date = date
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
         }
     }
 
     func settleUpWith(friend: User) {
-        // Add your settle up logic here
+        // Implement your settle up logic here, or leave empty for now
+        print("Settle up with \(friend.name)")
     }
-}
-
-struct Invite: Identifiable, Codable, Hashable {
-    let id: UUID
-    let email: String
-}
-
-struct ActivityEntry: Identifiable, Codable, Hashable {
-    let id: UUID
-    let text: String
-    let date: Date
+    
+    struct Invite: Identifiable, Codable, Hashable {
+        let id: UUID
+        let email: String
+    }
+    
+    struct ActivityEntry: Identifiable, Codable, Hashable {
+        let id: UUID
+        let text: String
+        let date: Date
+    }
 }

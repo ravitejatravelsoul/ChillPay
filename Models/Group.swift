@@ -14,6 +14,7 @@ struct Group: Identifiable, Hashable, Codable {
     var adjustments: [Adjustment]
     var simplifyDebts: Bool
 
+    // MARK: - Default Initializer
     init(
         id: String = UUID().uuidString,
         name: String,
@@ -42,6 +43,7 @@ struct Group: Identifiable, Hashable, Codable {
         self.simplifyDebts = simplifyDebts
     }
 
+    // MARK: - Codable
     enum CodingKeys: String, CodingKey {
         case id, name, members, expenses, isPublic, budget, activity, currency, colorName, iconName, adjustments, simplifyDebts
     }

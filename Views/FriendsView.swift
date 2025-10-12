@@ -4,6 +4,8 @@ struct FriendsView: View {
     @ObservedObject var friendsVM: FriendsViewModel = FriendsViewModel.shared
     @State private var searchText = ""
     @State private var showAddFriendSheet = false
+    @State private var showAddExpenseSheet = false
+    @State private var showFriendDetail = false
     @State private var selectedFriend: User?
     @State private var sortByOwesYou = false
 
@@ -18,7 +20,7 @@ struct FriendsView: View {
             ChillTheme.background.ignoresSafeArea()
 
             VStack(spacing: 32) {
-                // Header Card
+                // --- HEADER SECTION as in screenshot (image2) ---
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Friends")
                         .font(.system(size: 34, weight: .bold))
@@ -56,7 +58,7 @@ struct FriendsView: View {
                         }) {
                             HStack {
                                 Image(systemName: "arrow.up.arrow.down.circle")
-                                Text("Sort: Name")
+                                Text(sortByOwesYou ? "Sort: Owes You" : "Sort: Name")
                             }
                             .font(.system(size: 18, weight: .semibold))
                             .frame(maxWidth: .infinity)
@@ -72,7 +74,7 @@ struct FriendsView: View {
                 .cornerRadius(28)
                 .padding(.horizontal)
 
-                // Friends List Card
+                // --- FRIENDS LIST CARD ---
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("Your Friends")
@@ -86,7 +88,26 @@ struct FriendsView: View {
                     .padding(.bottom, 10)
 
                     ForEach(filteredFriends) { friend in
-                        FriendRow(friend: friend, friendsVM: friendsVM)
+                        HStack {
+                            Button(action: {
+                                selectedFriend = friend
+                                showFriendDetail = true
+                            }) {
+                                FriendRow(friend: friend, friendsVM: friendsVM)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Button(action: {
+                                selectedFriend = friend
+                                showAddExpenseSheet = true
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.title2)
+                                    .padding(.leading, 8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                         if friend.id != filteredFriends.last?.id {
                             Divider().background(Color(.systemGray4))
                         }
@@ -103,16 +124,22 @@ struct FriendsView: View {
             .sheet(isPresented: $showAddFriendSheet) {
                 AddFriendView(friendsVM: friendsVM)
             }
-            .sheet(item: $selectedFriend) { friend in
-                FriendDetailView(friend: friend, friendsVM: friendsVM)
+            .sheet(isPresented: $showAddExpenseSheet) {
+                if let friend = selectedFriend {
+                    AddDirectExpenseView(friend: friend, friendsVM: friendsVM, expenseToEdit: nil)
+                }
+            }
+            .sheet(isPresented: $showFriendDetail) {
+                if let friend = selectedFriend {
+                    FriendDetailView(friend: friend, friendsVM: friendsVM)
+                }
             }
         }
         .navigationBarHidden(true)
     }
 }
 
-// MARK: - Friend Row
-
+// --- FriendRow shows amount or "Settled" as required ---
 struct FriendRow: View {
     let friend: User
     let friendsVM: FriendsViewModel
@@ -131,14 +158,14 @@ struct FriendRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(friend.name)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white) // <-- FIXED: Use white for name
+                    .foregroundColor(.white)
             }
             Spacer()
-            // Net balance, colored two-line
+            // Net balance, colored and formatted
             let balance = friendsVM.balanceWith(friend: friend)
             if balance < 0 {
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("You owe \(friend.name)")
+                    Text("You owe")
                     Text("₹\(String(format: "%.2f", abs(balance)))")
                 }
                 .font(.system(size: 16, weight: .semibold))
@@ -146,7 +173,7 @@ struct FriendRow: View {
                 .multilineTextAlignment(.trailing)
             } else if balance > 0 {
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(friend.name) owes you")
+                    Text("Owes you")
                     Text("₹\(String(format: "%.2f", abs(balance)))")
                 }
                 .font(.system(size: 16, weight: .semibold))
@@ -162,11 +189,9 @@ struct FriendRow: View {
     }
 }
 
-// MARK: - User Avatar Color/Initial Helper
-
+// --- Avatar helpers ---
 extension User {
     var avatarColor: Color {
-        // Assigns a consistent color based on name hash
         let colors: [Color] = [.blue, .green, .red, .pink, .orange, .purple, .teal]
         let hash = abs(name.hashValue)
         return colors[hash % colors.count]

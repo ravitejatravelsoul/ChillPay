@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 enum AuthFlowScreen {
     case onboarding, login, signup, emailVerification, mainApp
@@ -7,7 +8,6 @@ enum AuthFlowScreen {
 struct AuthFlowCoordinator: View {
     @State private var flowScreen: AuthFlowScreen = .onboarding
     @ObservedObject var authService = AuthService.shared
-
     @State private var globalMessage: String? = nil
 
     var body: some View {
@@ -37,13 +37,7 @@ struct AuthFlowCoordinator: View {
                 LoginView(
                     onSignup: { flowScreen = .signup },
                     onLoginSuccess: {
-                        if let userProfile = AuthService.shared.user {
-                            FriendsViewModel.shared.currentUser = User(
-                                id: userProfile.uid,
-                                name: userProfile.name,
-                                email: userProfile.email
-                            )
-                        }
+                        setCurrentUserFromProfile()
                         if AuthService.shared.isEmailVerified {
                             flowScreen = .mainApp
                         } else {
@@ -60,9 +54,7 @@ struct AuthFlowCoordinator: View {
                 )
             case .signup:
                 SignupView(
-                    onSignupSuccess: {
-                        flowScreen = .emailVerification
-                    },
+                    onSignupSuccess: { flowScreen = .emailVerification },
                     onBack: { flowScreen = .login }
                 )
             case .emailVerification:
@@ -75,21 +67,36 @@ struct AuthFlowCoordinator: View {
             }
         }
         .onAppear {
-            if let userProfile = AuthService.shared.user {
-                FriendsViewModel.shared.currentUser = User(
-                    id: userProfile.uid,
-                    name: userProfile.name,
-                    email: userProfile.email
-                )
-            }
-            if authService.isAuthenticated && authService.isEmailVerified {
-                flowScreen = .mainApp
+            // --- Persistent login fix ---
+            if let currentUser = Auth.auth().currentUser {
+                AuthService.shared.setUser(from: currentUser)
+                setCurrentUserFromProfile()
+                if AuthService.shared.isEmailVerified {
+                    flowScreen = .mainApp
+                } else {
+                    flowScreen = .emailVerification
+                }
+            } else {
+                flowScreen = .login
             }
         }
-        // FIX for iOS 17 onChange deprecation:
         .onChange(of: authService.isAuthenticated) {
             if !authService.isAuthenticated {
                 flowScreen = .login
+            }
+        }
+    }
+
+    // Helper to always set currentUser using the existing User object from friends
+    private func setCurrentUserFromProfile() {
+        if let userProfile = AuthService.shared.user {
+            let myUid = userProfile.uid
+            if let existing = FriendsViewModel.shared.friends.first(where: { $0.id == myUid }) {
+                FriendsViewModel.shared.currentUser = existing
+            } else {
+                let user = User(id: myUid, name: userProfile.name, email: userProfile.email)
+                FriendsViewModel.shared.friends.append(user)
+                FriendsViewModel.shared.currentUser = user
             }
         }
     }
