@@ -2,10 +2,7 @@ import Foundation
 
 /// Manages persistence of groups using `UserDefaults`.
 ///
-/// All groups are encoded as JSON and stored under a constant key.  When
-/// reading, if decoding fails or there is no stored data, the `DummyData`
-/// sample groups are returned instead.  This class is a singleton for
-/// convenience.
+/// All groups are encoded as JSON and stored under a constant key.
 class StorageManager {
     static let shared = StorageManager()
     private let groupsKey = "groups"
@@ -22,16 +19,16 @@ class StorageManager {
         }
     }
     
-    /// Load all previously saved groups, or return sample groups on first launch.
+    /// Load all previously saved groups, or return an empty array if none.
     func loadGroups() -> [Group] {
         guard let data = UserDefaults.standard.data(forKey: groupsKey) else {
-            return DummyData.sampleGroups
+            return []
         }
         do {
             return try JSONDecoder().decode([Group].self, from: data)
         } catch {
             print("Failed to decode groups: \(error)")
-            return DummyData.sampleGroups
+            return []
         }
     }
 }

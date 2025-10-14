@@ -6,13 +6,25 @@ struct AddGroupView: View {
     @ObservedObject var friendsVM: FriendsViewModel
 
     @State private var name: String = ""
-    @State private var memberNames: [String] = [""]
+    @State private var selectedMembers: Set<User> = []
     @State private var isPublic: Bool = false
     @State private var budgetString: String = ""
     @State private var selectedCurrency: Currency = .usd
     @State private var selectedColorName: String = "blue"
     @State private var selectedIconName: String = "person.3.fill"
     @State private var errorMsg: String?
+
+    // Helper to build the member list for selection (always includes "me" first)
+    private var selectableMembers: [User] {
+        var list: [User] = []
+        if let me = FriendsViewModel.shared.currentUser {
+            list.append(me)
+        }
+        // Only add friends who are not "me"
+        let filteredFriends = friendsVM.friends.filter { $0.id != FriendsViewModel.shared.currentUser?.id }
+        list.append(contentsOf: filteredFriends)
+        return list
+    }
 
     var body: some View {
         ZStack {
@@ -39,42 +51,38 @@ struct AddGroupView: View {
                                 .textFieldStyle(ChillTextFieldStyle())
                         }
 
-                        // Members
+                        // Members (real users, always "me" first)
                         Text("Members")
                             .font(.headline)
                             .foregroundColor(.white)
                         VStack(spacing: 8) {
-                            ForEach(memberNames.indices, id: \.self) { idx in
-                                HStack {
-                                    ZStack(alignment: .leading) {
-                                        if memberNames[idx].isEmpty {
-                                            Text("Member Name")
-                                                .foregroundColor(.white.opacity(0.5))
-                                                .padding(.leading, 18)
-                                        }
-                                        TextField("", text: $memberNames[idx])
-                                            .textFieldStyle(ChillTextFieldStyle())
+                            ForEach(selectableMembers) { member in
+                                Button(action: {
+                                    if selectedMembers.contains(member) {
+                                        selectedMembers.remove(member)
+                                    } else {
+                                        selectedMembers.insert(member)
                                     }
-                                    if memberNames.count > 1 {
-                                        Button(action: { memberNames.remove(at: idx) }) {
-                                            Image(systemName: "minus.circle.fill")
-                                                .foregroundColor(.red)
+                                }) {
+                                    HStack {
+                                        AvatarView(user: member)
+                                            .frame(width: 30, height: 30)
+                                        Text(member.id == FriendsViewModel.shared.currentUser?.id ? "Me" : member.name)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        if selectedMembers.contains(member) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.green)
                                         }
                                     }
+                                    .padding(.vertical, 4)
                                 }
-                            }
-                            Button(action: { memberNames.append("") }) {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("Add Member")
-                                }
-                                .font(.system(size: 16, weight: .medium))
-                                .padding(.vertical, 4)
-                                .foregroundColor(.green)
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
 
-                        // Settings
+                        // Settings ...
+                        // (rest of your settings UI unchanged)
                         Text("Settings")
                             .font(.headline)
                             .foregroundColor(.white)
@@ -109,7 +117,6 @@ struct AddGroupView: View {
                                 .pickerStyle(MenuPickerStyle())
                             }
 
-                            // Color Picker
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Colour")
                                     .font(.subheadline)
@@ -129,7 +136,6 @@ struct AddGroupView: View {
                                     }
                                 }
                             }
-                            // Icon Picker
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Icon")
                                     .font(.subheadline)
@@ -204,23 +210,21 @@ struct AddGroupView: View {
     }
 
     private var isSaveDisabled: Bool {
-        name.trimmingCharacters(in: .whitespaces).isEmpty ||
-        memberNames.allSatisfy { $0.trimmingCharacters(in: .whitespaces).isEmpty }
+        name.trimmingCharacters(in: .whitespaces).isEmpty || selectedMembers.isEmpty
     }
 
     /// Persist the new group and dismiss.
     private func save() {
-        let trimmedNames = memberNames
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        let members = trimmedNames.map { nameStr in
-            User(id: UUID().uuidString, name: nameStr) // <--- id is String
+        // Always include current user regardless of selection
+        var groupMembers = selectedMembers
+        if let me = FriendsViewModel.shared.currentUser {
+            groupMembers.insert(me)
         }
         let budgetValue: Double? = Double(budgetString.trimmingCharacters(in: .whitespaces))
         let group = Group(
-            id: UUID().uuidString, 
+            id: UUID().uuidString,
             name: name.trimmingCharacters(in: .whitespaces),
-            members: members,
+            members: Array(groupMembers),
             expenses: [],
             isPublic: isPublic,
             budget: budgetValue,

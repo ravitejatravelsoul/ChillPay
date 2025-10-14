@@ -3,7 +3,7 @@ import SwiftUI
 struct AddFriendView: View {
     @ObservedObject var friendsVM: FriendsViewModel
     @Environment(\.presentationMode) var presentationMode
-    @State private var emailOrUsername = ""
+    @State private var email = ""
     @State private var inviteSent = false
     @State private var errorMsg: String?
 
@@ -18,11 +18,11 @@ struct AddFriendView: View {
                         .padding(.bottom, 8)
 
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Add by email or username")
+                        Text("Add by email")
                             .font(.headline)
                             .foregroundColor(.gray)
 
-                        TextField("Email or Username", text: $emailOrUsername)
+                        TextField("Email", text: $email)
                             .textInputAutocapitalization(.never)
                             .disableAutocorrection(true)
                             .padding(12)
@@ -38,7 +38,7 @@ struct AddFriendView: View {
                         }
 
                         Button(action: {
-                            friendsVM.addOrInviteFriend(identifier: emailOrUsername) { result in
+                            friendsVM.addOrInviteFriend(email: email) { result in
                                 switch result {
                                 case .success(let added):
                                     inviteSent = !added
@@ -57,10 +57,10 @@ struct AddFriendView: View {
                                 Spacer()
                             }
                             .padding()
-                            .background(emailOrUsername.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.green)
+                            .background(email.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.green)
                             .cornerRadius(14)
                         }
-                        .disabled(emailOrUsername.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(email.trimmingCharacters(in: .whitespaces).isEmpty)
 
                         if inviteSent {
                             HStack {
