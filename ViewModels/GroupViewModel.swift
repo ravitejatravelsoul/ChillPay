@@ -1,5 +1,7 @@
 import Foundation
 import Combine
+import CoreImage.CIFilterBuiltins
+import UIKit
 
 final class GroupViewModel: ObservableObject {
     @Published var groups: [Group] = [] {
@@ -91,5 +93,44 @@ final class GroupViewModel: ObservableObject {
     func expenses(for group: Group) -> [Expense] {
         guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return [] }
         return groups[idx].expenses
+    }
+
+    // MARK: - Export/Invite
+
+    func exportCSV(for group: Group) -> URL? {
+        let header = "Title,Amount,PaidBy,Participants,Date,Category\n"
+        let rows = group.expenses.map { expense in
+            let participants = expense.participants.map { $0.name }.joined(separator: "|")
+            return "\"\(expense.title)\",\(expense.amount),\"\(expense.paidBy.name)\",\"\(participants)\",\(expense.date),\(expense.category.rawValue)"
+        }
+        let csv = header + rows.joined(separator: "\n")
+        let filename = "\(group.name)-expenses.csv"
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent(filename)
+        do {
+            try csv.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            print("CSV Export error: \(error)")
+            return nil
+        }
+    }
+
+    func inviteLink(for group: Group) -> String {
+        // Example: You could use your domain and group id, or Firebase Dynamic Links
+        // Here, just a placeholder
+        return "https://chillpay.app/invite?group=\(group.id)"
+    }
+
+    func qrImage(for string: String) -> UIImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        let data = Data(string.utf8)
+        filter.setValue(data, forKey: "inputMessage")
+        guard let output = filter.outputImage else { return nil }
+        if let cgimg = context.createCGImage(output.transformed(by: .init(scaleX: 10, y: 10)), from: output.extent) {
+            return UIImage(cgImage: cgimg)
+        }
+        return nil
     }
 }

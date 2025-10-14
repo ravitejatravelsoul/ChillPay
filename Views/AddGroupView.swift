@@ -14,13 +14,11 @@ struct AddGroupView: View {
     @State private var selectedIconName: String = "person.3.fill"
     @State private var errorMsg: String?
 
-    // Helper to build the member list for selection (always includes "me" first)
     private var selectableMembers: [User] {
         var list: [User] = []
         if let me = FriendsViewModel.shared.currentUser {
             list.append(me)
         }
-        // Only add friends who are not "me"
         let filteredFriends = friendsVM.friends.filter { $0.id != FriendsViewModel.shared.currentUser?.id }
         list.append(contentsOf: filteredFriends)
         return list
@@ -37,7 +35,6 @@ struct AddGroupView: View {
                         .padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: 20) {
-                        // Group Name
                         Text("Group Name")
                             .font(.headline)
                             .foregroundColor(.white)
@@ -51,7 +48,6 @@ struct AddGroupView: View {
                                 .textFieldStyle(ChillTextFieldStyle())
                         }
 
-                        // Members (real users, always "me" first)
                         Text("Members")
                             .font(.headline)
                             .foregroundColor(.white)
@@ -81,8 +77,6 @@ struct AddGroupView: View {
                             }
                         }
 
-                        // Settings ...
-                        // (rest of your settings UI unchanged)
                         Text("Settings")
                             .font(.headline)
                             .foregroundColor(.white)
@@ -213,9 +207,7 @@ struct AddGroupView: View {
         name.trimmingCharacters(in: .whitespaces).isEmpty || selectedMembers.isEmpty
     }
 
-    /// Persist the new group and dismiss.
     private func save() {
-        // Always include current user regardless of selection
         var groupMembers = selectedMembers
         if let me = FriendsViewModel.shared.currentUser {
             groupMembers.insert(me)
@@ -239,7 +231,6 @@ struct AddGroupView: View {
         presentationMode.wrappedValue.dismiss()
     }
 
-    // Helper to get a Color from a color name string
     private func color(for name: String) -> Color {
         switch name {
         case "blue": return .blue

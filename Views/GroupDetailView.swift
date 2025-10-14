@@ -121,11 +121,14 @@ struct GroupDetailView: View {
     }
 
     private func leaveGroup() {
-        // Example: Remove yourself from members, or perform your own logic
+        // Remove self from the group
+        if let me = FriendsViewModel.shared.currentUser {
+            groupVM.removeMember(me, from: group)
+        }
     }
 }
 
-// --- Subviews (no changes needed except only using expenses and activity here) ---
+// --- Subviews ---
 
 struct HeaderCard: View {
     let group: Group

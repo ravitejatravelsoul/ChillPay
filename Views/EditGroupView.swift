@@ -19,7 +19,7 @@ struct EditGroupView: View {
         self.groupVM = groupVM
         self.friendsVM = friendsVM
         _name = State(initialValue: group.name)
-        _selectedMemberIDs = State(initialValue: Set(group.members.map { $0.id })) // <--- String now
+        _selectedMemberIDs = State(initialValue: Set(group.members.map { $0.id }))
         _isPublic = State(initialValue: group.isPublic)
         if let budget = group.budget {
             _budgetString = State(initialValue: String(format: "%.2f", budget))
@@ -31,6 +31,15 @@ struct EditGroupView: View {
         _selectedIconName = State(initialValue: group.iconName)
     }
 
+    private var allSelectableMembers: [User] {
+        var members = friendsVM.friends
+        if let me = FriendsViewModel.shared.currentUser,
+           !members.contains(where: { $0.id == me.id }) {
+            members.insert(me, at: 0)
+        }
+        return members
+    }
+
     var body: some View {
         NavigationView {
             Form {
@@ -38,11 +47,11 @@ struct EditGroupView: View {
                     TextField("Enter name", text: $name)
                 }
                 Section(header: Text("Members")) {
-                    if friendsVM.friends.isEmpty {
+                    if allSelectableMembers.isEmpty {
                         Text("No friends available. Add friends to add them to groups.")
                             .foregroundColor(.secondary)
                     } else {
-                        ForEach(friendsVM.friends) { friend in
+                        ForEach(allSelectableMembers) { friend in
                             Button(action: {
                                 if selectedMemberIDs.contains(friend.id) {
                                     selectedMemberIDs.remove(friend.id)
@@ -52,7 +61,7 @@ struct EditGroupView: View {
                             }) {
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text(friend.name)
+                                        Text(friend.id == FriendsViewModel.shared.currentUser?.id ? "Me" : friend.name)
                                         if let email = friend.email, !email.isEmpty {
                                             Text(email)
                                                 .font(.caption)
@@ -133,8 +142,7 @@ struct EditGroupView: View {
                     Button("Save") {
                         save()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty ||
-                              selectedMemberIDs.isEmpty)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || selectedMemberIDs.isEmpty)
                 }
             }
         }
@@ -142,7 +150,7 @@ struct EditGroupView: View {
 
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        let updatedMembers = friendsVM.friends.filter { selectedMemberIDs.contains($0.id) }
+        let updatedMembers = allSelectableMembers.filter { selectedMemberIDs.contains($0.id) }
 
         // Remove expenses referencing removed users
         let removedUsers = group.members.filter { original in
@@ -152,28 +160,23 @@ struct EditGroupView: View {
             groupVM.removeMember(removed, from: group)
         }
 
-        // Retrieve the latest version of the group from the view model
         var updatedGroup = groupVM.groups.first(where: { $0.id == group.id }) ?? group
 
-        // Update name and log if changed
         if updatedGroup.name != trimmedName {
             groupVM.renameGroup(updatedGroup, newName: trimmedName)
             updatedGroup.name = trimmedName
         }
 
-        // Compute budget value from text
         let trimmedBudget = budgetString.trimmingCharacters(in: .whitespaces)
         let budgetValue = Double(trimmedBudget)
         updatedGroup.budget = budgetValue
 
-        // Update public flag
         if updatedGroup.isPublic != isPublic {
             updatedGroup.isPublic = isPublic
             let state = isPublic ? "public" : "private"
             groupVM.logActivity(for: group.id, text: "Changed group visibility to \(state)")
         }
 
-        // Update currency if it changed
         if updatedGroup.currency != selectedCurrency {
             let oldCurrency = updatedGroup.currency
             updatedGroup.currency = selectedCurrency
@@ -183,7 +186,6 @@ struct EditGroupView: View {
             )
         }
 
-        // Update colour and icon if changed
         if updatedGroup.colorName != selectedColorName {
             updatedGroup.colorName = selectedColorName
             groupVM.logActivity(for: group.id, text: "Changed colour to \(selectedColorName)")
@@ -193,13 +195,11 @@ struct EditGroupView: View {
             groupVM.logActivity(for: group.id, text: "Changed icon to \(selectedIconName)")
         }
 
-        // Update members
         updatedGroup.members = updatedMembers
         groupVM.updateGroup(updatedGroup)
         presentationMode.wrappedValue.dismiss()
     }
 
-    // Helper to get a Color from a color name string
     private func color(for name: String) -> Color {
         switch name {
         case "blue": return .blue
