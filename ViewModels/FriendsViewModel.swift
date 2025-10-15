@@ -21,8 +21,10 @@ class FriendsViewModel: ObservableObject {
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
         let allGroupExpenses = groups.flatMap { $0.expenses }
+        // Also include direct expense users
+        let directUsers = Set(directExpenses.flatMap { $0.participants })
         DispatchQueue.main.async {
-            self.friends = Array(allUsers).sorted { $0.name < $1.name }
+            self.friends = Array(allUsers.union(directUsers)).sorted { $0.name < $1.name }
             self.groupExpenses = allGroupExpenses
         }
     }
@@ -100,15 +102,23 @@ class FriendsViewModel: ObservableObject {
         guard let currentUser = currentUser else { return }
         let userRef = db.collection("users").document(currentUser.id)
         userRef.getDocument { doc, error in
-            guard let doc = doc, let data = doc.data(), let friendIds = data["friends"] as? [String], !friendIds.isEmpty else { return }
+            // Allow for empty friendIds, but always include direct expense users
+            let directUsers = Set(self.directExpenses.flatMap { $0.participants })
+            guard let doc = doc, let data = doc.data(), let friendIds = data["friends"] as? [String], !friendIds.isEmpty else {
+                DispatchQueue.main.async {
+                    self.friends = Array(directUsers).sorted { $0.name < $1.name }
+                }
+                return
+            }
             self.db.collection("users").whereField(FieldPath.documentID(), in: friendIds).getDocuments { snapshot, error in
                 guard let docs = snapshot?.documents else { return }
                 let users = docs.compactMap { doc in
                     let data = doc.data()
                     return User(id: doc.documentID, name: data["name"] as? String ?? "", email: data["email"] as? String)
                 }
+                let allUsers = Set(users).union(directUsers)
                 DispatchQueue.main.async {
-                    self.friends = users.sorted { $0.name < $1.name }
+                    self.friends = Array(allUsers).sorted { $0.name < $1.name }
                 }
             }
         }
@@ -169,7 +179,6 @@ class FriendsViewModel: ObservableObject {
     }
 
     func removeFriend(_ friend: User) {
-        // Remove from Firestore friend arrays
         guard let currentUser = currentUser else { return }
         let myId = currentUser.id
         let friendId = friend.id
@@ -186,8 +195,17 @@ class FriendsViewModel: ObservableObject {
         }
     }
 
+    /// Ensures all direct expense participants are present in friends list
     func refreshFriends() {
-        fetchFriends()
+        // Merge all unique users from groups and direct expenses
+        var allUsers = Set<User>()
+        allUsers.formUnion(friends)
+        allUsers.formUnion(directExpenses.flatMap { $0.participants })
+        // Optionally, also include currentUser
+        if let me = currentUser {
+            allUsers.insert(me)
+        }
+        self.friends = Array(allUsers).sorted { $0.name < $1.name }
     }
 
     func historyWith(friend: User) -> [ActivityEntry] {
@@ -228,6 +246,11 @@ class FriendsViewModel: ObservableObject {
             groupID: nil
         )
         directExpenses.append(expense)
+        // --- Make sure both users are in the friends list for Friends tab ---
+        var updatedFriends = Set(friends)
+        updatedFriends.insert(curUserObj)
+        updatedFriends.insert(friendObj)
+        friends = Array(updatedFriends).sorted { $0.name < $1.name }
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }

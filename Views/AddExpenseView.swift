@@ -5,7 +5,7 @@ struct AddExpenseView: View {
     @ObservedObject var groupVM: GroupViewModel
     var group: Group
     var expenseToEdit: Expense?
-    
+
     @State private var title: String
     @State private var amountString: String
     @State private var paidBy: User?
@@ -14,6 +14,11 @@ struct AddExpenseView: View {
     @State private var isRecurring: Bool
     @State private var expenseDate: Date
     @State private var errorMsg: String?
+    @FocusState private var focusedField: Field?
+
+    enum Field: Hashable {
+        case title, amount
+    }
 
     init(group: Group, groupVM: GroupViewModel, expenseToEdit: Expense? = nil) {
         self.group = group
@@ -36,147 +41,164 @@ struct AddExpenseView: View {
             _expenseDate = State(initialValue: Date())
         }
     }
-    
+
     var body: some View {
-        ZStack {
-            ChillTheme.background.ignoresSafeArea()
-            VStack(spacing: 32) {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.bottom, 8)
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Title
-                        Text("Title")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        ZStack(alignment: .leading) {
-                            if title.isEmpty {
-                                Text("Enter title")
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .padding(.leading, 18)
-                            }
-                            TextField("", text: $title)
-                                .textFieldStyle(ChillTextFieldStyle())
-                        }
-
-                        // Amount
-                        Text("Amount (\(group.currency.symbol))")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        ZStack(alignment: .leading) {
-                            if amountString.isEmpty {
-                                Text("Enter amount")
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .padding(.leading, 18)
-                            }
-                            TextField("", text: $amountString)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(ChillTextFieldStyle())
-                        }
-
-                        // Paid By
-                        Text("Paid By")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        Picker(selection: $paidBy, label: Text("Select Payer").foregroundColor(.white)) {
-                            Text("Select").tag(Optional<User>(nil))
-                            ForEach(group.members) { user in
-                                Text(user.name).tag(Optional(user))
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        .padding(.horizontal, 2)
-
-                        // Category
-                        Text("Category")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
-                            ForEach(ExpenseCategory.allCases, id: \.self) { cat in
-                                HStack {
-                                    Text(cat.emoji)
-                                    Text(cat.displayName)
-                                }
-                                .tag(cat)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        .padding(.horizontal, 2)
-
-                        // Date
-                        Text("Date Paid")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
-                            .datePickerStyle(CompactDatePickerStyle())
-                            .accentColor(.green)
-                            .padding(.vertical, 2)
-                            .colorScheme(.dark)
-
-                        // Recurring
-                        Toggle(isOn: $isRecurring) {
-                            Text("Recurring Expense")
+        ChillTheme.background.ignoresSafeArea()
+            .overlay(
+                ScrollView {
+                    VStack(spacing: 32) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.white)
-                                .font(.headline)
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .green))
-                        .padding(.vertical, 4)
-
-                        // Participants (as chips)
-                        Text("Participants")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        ParticipantsWrapView(users: group.members, selectedParticipants: $selectedParticipants)
-
-                        if let msg = errorMsg {
-                            Text(msg)
-                                .foregroundColor(.red)
-                                .font(.subheadline)
-                                .padding(.top, 2)
-                        }
-
-                        // Save Button
-                        Button(action: {
-                            save()
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text("Save")
-                                    .fontWeight(.bold)
+                                .padding(.bottom, 8)
+                            VStack(alignment: .leading, spacing: 16) {
+                                // Title
+                                Text("Title")
+                                    .font(.headline)
                                     .foregroundColor(.white)
-                                Spacer()
-                            }
-                            .padding()
-                            .background(canSave ? Color.green : Color.gray)
-                            .cornerRadius(14)
-                        }
-                        .disabled(!canSave)
-                    }
-                }
-                .padding()
-                .background(ChillTheme.card)
-                .cornerRadius(28)
-                .padding(.horizontal, 20)
+                                ZStack(alignment: .leading) {
+                                    if title.isEmpty {
+                                        Text("Enter title")
+                                            .foregroundColor(.white.opacity(0.5))
+                                            .padding(.leading, 18)
+                                    }
+                                    TextField("", text: $title)
+                                        .textFieldStyle(ChillTextFieldStyle())
+                                        .focused($focusedField, equals: .title)
+                                }
 
-                Spacer()
-            }
+                                // Amount
+                                Text("Amount (\(group.currency.symbol))")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                ZStack(alignment: .leading) {
+                                    if amountString.isEmpty {
+                                        Text("Enter amount")
+                                            .foregroundColor(.white.opacity(0.5))
+                                            .padding(.leading, 18)
+                                    }
+                                    TextField("", text: $amountString)
+                                        .keyboardType(.decimalPad)
+                                        .textFieldStyle(ChillTextFieldStyle())
+                                        .focused($focusedField, equals: .amount)
+                                }
+
+                                // Paid By
+                                Text("Paid By")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Picker(selection: $paidBy, label: Text("Select Payer").foregroundColor(.white)) {
+                                    Text("Select").tag(Optional<User>(nil))
+                                    ForEach(group.members) { user in
+                                        Text(user.name).tag(Optional(user))
+                                    }
+                                }
+                                .pickerStyle(MenuPickerStyle())
+                                .padding(.horizontal, 2)
+                                .onTapGesture { dismissKeyboard() }
+
+                                // Category
+                                Text("Category")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
+                                    ForEach(ExpenseCategory.allCases, id: \.self) { cat in
+                                        HStack {
+                                            Text(cat.emoji)
+                                            Text(cat.displayName)
+                                        }
+                                        .tag(cat)
+                                    }
+                                }
+                                .pickerStyle(MenuPickerStyle())
+                                .padding(.horizontal, 2)
+                                .onTapGesture { dismissKeyboard() }
+
+                                // Date
+                                Text("Date Paid")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
+                                    .datePickerStyle(CompactDatePickerStyle())
+                                    .accentColor(.green)
+                                    .padding(.vertical, 2)
+                                    .colorScheme(.dark)
+                                    .onTapGesture { dismissKeyboard() }
+
+                                // Recurring
+                                Toggle(isOn: $isRecurring) {
+                                    Text("Recurring Expense")
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: .green))
+                                .padding(.vertical, 4)
+                                .onTapGesture { dismissKeyboard() }
+
+                                // Participants (as chips)
+                                Text("Participants")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                ParticipantsWrapView(users: group.members, selectedParticipants: $selectedParticipants)
+                                    .onTapGesture { dismissKeyboard() }
+
+                                if let msg = errorMsg {
+                                    Text(msg)
+                                        .foregroundColor(.red)
+                                        .font(.subheadline)
+                                        .padding(.top, 2)
+                                }
+
+                                // Save Button
+                                Button(action: {
+                                    dismissKeyboard()
+                                    save()
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        Text("Save")
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(canSave ? Color.green : Color.gray)
+                                    .cornerRadius(14)
+                                }
+                                .disabled(!canSave)
+                            }
+                        }
+                        .padding()
+                        .background(ChillTheme.card)
+                        .cornerRadius(28)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .padding(.bottom, 16)
+                    }
+                    .padding(.bottom, 40)
+                }
+                .ignoresSafeArea(.keyboard)
+                .onTapGesture {
+                    dismissKeyboard()
+                }
+            )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { presentationMode.wrappedValue.dismiss() }
-                        .foregroundColor(.red)
+                    Button("Cancel") {
+                        dismissKeyboard()
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.red)
                 }
             }
-        }
     }
-    
+
     private var canSave: Bool {
         guard let _ = Double(amountString), let paidBy = paidBy else { return false }
         return !title.trimmingCharacters(in: .whitespaces).isEmpty && !selectedParticipants.isEmpty && group.members.contains(paidBy)
     }
-    
+
     private func toggleParticipant(_ user: User) {
         if selectedParticipants.contains(user) {
             selectedParticipants.remove(user)
@@ -184,7 +206,7 @@ struct AddExpenseView: View {
             selectedParticipants.insert(user)
         }
     }
-    
+
     private func save() {
         guard let amt = Double(amountString), let payer = paidBy else { return }
         if !canSave { errorMsg = "Fill all required fields"; return }
@@ -205,17 +227,23 @@ struct AddExpenseView: View {
             expenseVM.updateExpense(expense, in: group)
         } else {
             expenseVM.addExpense(expense, to: group)
-            NotificationManager.shared.scheduleNotification(
-                title: "New Expense Added",
-                body: "\(payer.name) paid \(group.currency.symbol)\(String(format: "%.2f", amt)) for \"\(title)\"",
-                date: Date().addingTimeInterval(1)
-            )
+            // Uncomment or add your NotificationManager if you have it implemented.
+            // NotificationManager.shared.scheduleNotification(
+            //     title: "New Expense Added",
+            //     body: "\(payer.name) paid \(group.currency.symbol)\(String(format: "%.2f", amt)) for \"\(title)\"",
+            //     date: Date().addingTimeInterval(1)
+            // )
         }
         presentationMode.wrappedValue.dismiss()
     }
+
+    private func dismissKeyboard() {
+        focusedField = nil
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
 }
 
-// MARK: - Participants Wrap View
+// MARK: - ParticipantsWrapView and FlexibleView remain unchanged from your implementation
 
 struct ParticipantsWrapView: View {
     let users: [User]
@@ -249,8 +277,6 @@ struct ParticipantsWrapView: View {
         }
     }
 }
-
-// MARK: - FlexibleView
 
 struct FlexibleView<Data: RandomAccessCollection, Content: View>: View where Data.Element: Identifiable {
     let data: Data

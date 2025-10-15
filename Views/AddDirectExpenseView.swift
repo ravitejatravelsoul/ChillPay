@@ -98,6 +98,7 @@ struct AddDirectExpenseView: View {
                                         date: date
                                     )
                                 }
+                                friendsVM.refreshFriends() // <-- Ensure the friends list reflects new direct expense
                                 presentationMode.wrappedValue.dismiss()
                             } else {
                                 errorMsg = "Please enter a valid amount"
