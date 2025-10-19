@@ -156,10 +156,12 @@ class FriendsViewModel: ObservableObject {
         }
     }
 
+    // Use epsilon for floating point comparison for settled display
     func balanceString(_ bal: Double, friend: User) -> String {
-        if bal > 0 {
+        let epsilon = 0.01
+        if bal > epsilon {
             return "\(friend.name) owes you ₹\(String(format: "%.2f", abs(bal)))"
-        } else if bal < 0 {
+        } else if bal < -epsilon {
             return "You owe \(friend.name) ₹\(String(format: "%.2f", abs(bal)))"
         } else {
             return "Settled"
@@ -167,8 +169,9 @@ class FriendsViewModel: ObservableObject {
     }
 
     func balanceColor(_ bal: Double) -> Color {
-        if bal > 0 { return .green }
-        else if bal < 0 { return .red }
+        let epsilon = 0.01
+        if bal > epsilon { return .green }
+        else if bal < -epsilon { return .red }
         else { return .secondary }
     }
 
@@ -206,6 +209,9 @@ class FriendsViewModel: ObservableObject {
             allUsers.insert(me)
         }
         self.friends = Array(allUsers).sorted { $0.name < $1.name }
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
     }
 
     func historyWith(friend: User) -> [ActivityEntry] {
@@ -251,9 +257,7 @@ class FriendsViewModel: ObservableObject {
         updatedFriends.insert(curUserObj)
         updatedFriends.insert(friendObj)
         friends = Array(updatedFriends).sorted { $0.name < $1.name }
-        DispatchQueue.main.async {
-            self.objectWillChange.send()
-        }
+        refreshFriends()
     }
 
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
@@ -265,9 +269,7 @@ class FriendsViewModel: ObservableObject {
             directExpenses[idx].amount = amount
             directExpenses[idx].paidBy = paidByMe ? curUserObj : friendObj
             directExpenses[idx].date = date
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
+            refreshFriends()
         }
     }
 

@@ -37,14 +37,15 @@ struct FriendDetailView: View {
 
                     // Balance Card: Always show amount
                     let balance = friendsVM.balanceWith(friend: friend)
+                    let epsilon = 0.01
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Balance with \(friend.name):")
                             .foregroundColor(.gray)
-                        if balance < 0 {
+                        if balance < -epsilon {
                             Text("You owe ₹\(String(format: "%.2f", abs(balance)))")
                                 .foregroundColor(.red)
                                 .font(.title.bold())
-                        } else if balance > 0 {
+                        } else if balance > epsilon {
                             Text("\(friend.name) owes you ₹\(String(format: "%.2f", abs(balance)))")
                                 .foregroundColor(.green)
                                 .font(.title.bold())
@@ -72,7 +73,7 @@ struct FriendDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(16)
                         }
-                        if balance != 0 {
+                        if abs(balance) > epsilon {
                             Button(action: {
                                 friendsVM.settleUpWith(friend: friend)
                             }) {

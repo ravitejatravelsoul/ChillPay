@@ -20,7 +20,7 @@ struct FriendsView: View {
             ChillTheme.background.ignoresSafeArea()
 
             VStack(spacing: 32) {
-                // --- HEADER SECTION as in screenshot (image2) ---
+                // --- HEADER SECTION ---
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Friends")
                         .font(.system(size: 34, weight: .bold))
@@ -163,7 +163,8 @@ struct FriendRow: View {
             Spacer()
             // Net balance, colored and formatted
             let balance = friendsVM.balanceWith(friend: friend)
-            if balance < 0 {
+            let epsilon = 0.01
+            if balance < -epsilon {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("You owe")
                     Text("₹\(String(format: "%.2f", abs(balance)))")
@@ -171,7 +172,7 @@ struct FriendRow: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.red)
                 .multilineTextAlignment(.trailing)
-            } else if balance > 0 {
+            } else if balance > epsilon {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("Owes you")
                     Text("₹\(String(format: "%.2f", abs(balance)))")
