@@ -5,9 +5,15 @@ struct FriendDetailView: View {
     @ObservedObject var friendsVM: FriendsViewModel
     @State private var showAddExpense = false
     @State private var selectedExpense: Expense?
+    @State private var showDeleteAlert = false
+    @Environment(\.presentationMode) private var presentationMode
 
     var allExpensesWithFriend: [Expense] {
         friendsVM.allExpensesWith(friend: friend)
+    }
+
+    var isSettled: Bool {
+        friendsVM.isSettledWith(friend: friend)
     }
 
     var body: some View {
@@ -115,6 +121,25 @@ struct FriendDetailView: View {
                     .padding()
                     .background(ChillTheme.card)
                     .cornerRadius(24)
+
+                    // --- Delete from Friends List Button ---
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete from friends list")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(isSettled ? Color.red : Color.gray.opacity(0.7))
+                        .cornerRadius(16)
+                    }
+                    .disabled(!isSettled)
+                    .opacity(isSettled ? 1 : 0.5)
+                    .padding(.top, 12)
                 }
                 .padding()
             }
@@ -142,9 +167,23 @@ struct FriendDetailView: View {
                     expenseToEdit: expense // Edit mode
                 )
             }
+            .alert(isPresented: $showDeleteAlert) {
+                Alert(
+                    title: Text("Remove Friend"),
+                    message: Text("Are you sure you want to remove \(friend.name) from your friends list?"),
+                    primaryButton: .destructive(Text("Remove")) {
+                        // FIX: Remove friend and prevent immediate re-adding
+                        friendsVM.removeFriend(friend)
+                        // Also clear any pending expense edits for this friend
+                        selectedExpense = nil
+                        // Dismiss detail sheet immediately
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
         }
     }
-    @Environment(\.presentationMode) private var presentationMode
 }
 
 // MARK: - FriendExpenseRow
