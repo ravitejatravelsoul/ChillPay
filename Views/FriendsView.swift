@@ -8,6 +8,8 @@ struct FriendsView: View {
     @State private var showFriendDetail = false
     @State private var selectedFriend: User?
     @State private var sortByOwesYou = false
+    @State private var lastSheetDismissed: Date = Date()
+    @State private var forceRefresh = false // NEW: dummy state to force view update
 
     var filteredFriends: [User] {
         let list = friendsVM.friends
@@ -15,19 +17,24 @@ struct FriendsView: View {
         return list.filter { $0.name.localizedCaseInsensitiveContains(searchText) || ($0.email?.localizedCaseInsensitiveContains(searchText) ?? false) }
     }
 
+    func delayedRefresh() {
+        // Guarantee a refresh 0.2 seconds after sheet dismiss (works around SwiftUI bug)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            print("[FriendsView] delayedRefresh called")
+            friendsVM.refreshFriends()
+            forceRefresh.toggle() // NEW: force view refresh
+        }
+    }
+
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
-
             VStack(spacing: 32) {
-                // --- HEADER SECTION ---
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Friends")
                         .font(.system(size: 34, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.top, 4)
-
-                    // Search
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
@@ -39,8 +46,6 @@ struct FriendsView: View {
                     .padding(12)
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
-
-                    // Actions
                     HStack(spacing: 16) {
                         Button(action: { showAddFriendSheet = true }) {
                             Label("Add Friend", systemImage: "person.badge.plus")
@@ -51,7 +56,6 @@ struct FriendsView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(14)
                         }
-
                         Button(action: {
                             sortByOwesYou.toggle()
                             friendsVM.sortByOwesYou(sort: sortByOwesYou)
@@ -73,8 +77,6 @@ struct FriendsView: View {
                 .background(ChillTheme.card)
                 .cornerRadius(28)
                 .padding(.horizontal)
-
-                // --- FRIENDS LIST CARD ---
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("Your Friends")
@@ -86,7 +88,6 @@ struct FriendsView: View {
                             .foregroundColor(.gray)
                     }
                     .padding(.bottom, 10)
-
                     ForEach(filteredFriends) { friend in
                         HStack {
                             Button(action: {
@@ -96,7 +97,6 @@ struct FriendsView: View {
                                 FriendRow(friend: friend, friendsVM: friendsVM)
                             }
                             .buttonStyle(PlainButtonStyle())
-
                             Button(action: {
                                 selectedFriend = friend
                                 showAddExpenseSheet = true
@@ -118,24 +118,50 @@ struct FriendsView: View {
                 .cornerRadius(28)
                 .padding(.horizontal)
                 .padding(.bottom, 72)
-
                 Spacer()
             }
-            .sheet(isPresented: $showAddFriendSheet) {
+            .id(forceRefresh) // NEW: force view re-render
+            .sheet(isPresented: $showAddFriendSheet, onDismiss: {
+                lastSheetDismissed = Date()
+                delayedRefresh()
+            }) {
                 AddFriendView(friendsVM: friendsVM)
             }
-            .sheet(isPresented: $showAddExpenseSheet) {
+            .sheet(isPresented: $showAddExpenseSheet, onDismiss: {
+                lastSheetDismissed = Date()
+                delayedRefresh()
+            }) {
                 if let friend = selectedFriend {
                     AddDirectExpenseView(friend: friend, friendsVM: friendsVM, expenseToEdit: nil)
+                } else {
+                    Text("Loading...").frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .sheet(isPresented: $showFriendDetail) {
+            .sheet(isPresented: $showFriendDetail, onDismiss: {
+                lastSheetDismissed = Date()
+                delayedRefresh()
+            }) {
                 if let friend = selectedFriend {
                     FriendDetailView(friend: friend, friendsVM: friendsVM)
+                } else {
+                    Text("Loading...").frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            print("[FriendsView] onAppear called")
+            friendsVM.refreshFriends()
+        }
+        .onChange(of: friendsVM.didUpdateExpenses) {
+            print("[FriendsView] onChange didUpdateExpenses called")
+            friendsVM.refreshFriends()
+            forceRefresh.toggle() // NEW: force view re-render
+        }
+        .onChange(of: lastSheetDismissed) {
+            // Just a trigger for the timer-based refresh.
+            print("[FriendsView] onChange lastSheetDismissed called")
+        }
     }
 }
 
@@ -161,7 +187,6 @@ struct FriendRow: View {
                     .foregroundColor(.white)
             }
             Spacer()
-            // Net balance, colored and formatted
             let balance = friendsVM.balanceWith(friend: friend)
             let epsilon = 0.01
             if balance < -epsilon {
