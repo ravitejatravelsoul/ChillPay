@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExpenseListView: View {
     @ObservedObject var groupVM: GroupViewModel
+    @EnvironmentObject var friendsVM: FriendsViewModel
     @State var group: Group
 
     @State private var showAddExpense = false
@@ -12,21 +13,31 @@ struct ExpenseListView: View {
     var body: some View {
         VStack(spacing: 0) {
             List {
-                // Expense List Section
+                // MARK: - Expense List Section
                 Section {
                     ForEach(group.expenses) { expense in
                         HStack(alignment: .top, spacing: 8) {
                             AvatarView(user: expense.paidBy)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(expense.title).font(.headline)
+                                Text(expense.title)
+                                    .font(.headline)
+
                                 let amountString = String(format: "%.2f", expense.amount)
                                 Text("Amount: \(group.currency.symbol)\(amountString)")
+
                                 Text("Category: \(expense.category.displayName)")
-                                    .font(.subheadline).foregroundColor(.secondary)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+
                                 Text("Paid by: \(expense.paidBy.name)")
-                                let participantsString = expense.participants.map { $0.name }.joined(separator: ", ")
+
+                                let participantsString = expense.participants
+                                    .map { $0.name }
+                                    .joined(separator: ", ")
                                 Text("Participants: \(participantsString)")
-                                    .font(.footnote).foregroundColor(.secondary)
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+
                                 if expense.isRecurring {
                                     Text("Recurring")
                                         .font(.footnote)
@@ -35,7 +46,9 @@ struct ExpenseListView: View {
                             }
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { selectedExpense = expense }
+                        .onTapGesture {
+                            selectedExpense = expense
+                        }
                         .contextMenu {
                             Button(action: { editingExpense = expense }) {
                                 Label("Edit", systemImage: "pencil")
@@ -48,7 +61,7 @@ struct ExpenseListView: View {
                     }
                 }
 
-                // Group Summary Section (Balances, Settlements, Activity)
+                // MARK: - Group Summary Section
                 Section {
                     GroupSummarySection(
                         groupVM: groupVM,
@@ -72,22 +85,32 @@ struct ExpenseListView: View {
                     }
                 }
             }
+
+            // MARK: - Sheets
             .sheet(isPresented: $showAddExpense) {
                 AddExpenseView(group: group, groupVM: groupVM)
+                    .environmentObject(friendsVM)
             }
+
             .sheet(item: $editingExpense) { exp in
                 AddExpenseView(group: group, groupVM: groupVM, expenseToEdit: exp)
+                    .environmentObject(friendsVM)
             }
+
             .sheet(item: $selectedExpense) { exp in
                 ExpenseDetailView(groupVM: groupVM, group: group, expense: exp)
+                    .environmentObject(friendsVM)
             }
+
             .sheet(isPresented: $showAnalytics) {
-                // Fix: Pass groupVM if AnalyticsView expects it
-                AnalyticsView(group: group, groupVM: groupVM)
+                AnalyticsView(group: group)
+                    .environmentObject(groupVM)
+                    .environmentObject(friendsVM)
             }
         }
     }
 
+    // MARK: - Helpers
     private func syncGroup() {
         if let updated = groupVM.groups.first(where: { $0.id == group.id }) {
             group = updated

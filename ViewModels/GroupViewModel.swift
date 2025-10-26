@@ -8,8 +8,15 @@ final class GroupViewModel: ObservableObject {
         didSet {
             StorageManager.shared.saveGroups(groups)
             friendsVM?.syncWithGroups(groups)
+            updateGlobalCaches()
         }
     }
+
+    // Global reactive caches (for Dashboard & Analytics)
+    @Published var globalExpenseCount: Int = 0
+    @Published var globalExpenseSum: Double = 0
+    @Published var globalActivityCount: Int = 0
+    @Published var globalActivity: [Activity] = [] // ✅ Added back for DashboardView
 
     weak var friendsVM: FriendsViewModel?
 
@@ -17,9 +24,8 @@ final class GroupViewModel: ObservableObject {
         self.friendsVM = friendsVM
         self.groups = StorageManager.shared.loadGroups()
         friendsVM?.syncWithGroups(groups)
+        updateGlobalCaches()
     }
-
-    // MARK: - Group Management
 
     func addGroup(_ group: Group) {
         groups.append(group)
@@ -34,6 +40,7 @@ final class GroupViewModel: ObservableObject {
 
     func deleteGroup(_ group: Group) {
         groups.removeAll { $0.id == group.id }
+        updateGlobalCaches()
     }
 
     func renameGroup(_ group: Group, newName: String) {
@@ -54,21 +61,12 @@ final class GroupViewModel: ObservableObject {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         var g = groups[index]
         g.expenses.removeAll { exp in
-            exp.paidBy.id == user.id ||
-            exp.participants.contains(where: { $0.id == user.id })
+            exp.paidBy.id == user.id || exp.participants.contains(where: { $0.id == user.id })
         }
         g.members.removeAll { $0.id == user.id }
         groups[index] = g
         logActivity(for: group.id, text: "Removed member \(user.name)")
     }
-
-    func logActivity(for groupID: String, text: String) {
-        guard let idx = groups.firstIndex(where: { $0.id == groupID }) else { return }
-        let entry = Activity(id: UUID(), text: text, date: Date())
-        groups[idx].activity.append(entry)
-    }
-
-    // MARK: - Expense Management
 
     func addExpense(_ expense: Expense, to group: Group) {
         guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
@@ -77,11 +75,10 @@ final class GroupViewModel: ObservableObject {
     }
 
     func updateExpense(_ expense: Expense, in group: Group) {
-        guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
-        if let eIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) {
-            groups[idx].expenses[eIdx] = expense
-            logActivity(for: group.id, text: "Updated expense: \(expense.title)")
-        }
+        guard let idx = groups.firstIndex(where: { $0.id == group.id }),
+              let eIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+        groups[idx].expenses[eIdx] = expense
+        logActivity(for: group.id, text: "Updated expense: \(expense.title)")
     }
 
     func deleteExpense(_ expense: Expense, from group: Group) {
@@ -90,47 +87,67 @@ final class GroupViewModel: ObservableObject {
         logActivity(for: group.id, text: "Deleted expense: \(expense.title)")
     }
 
-    func expenses(for group: Group) -> [Expense] {
-        guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return [] }
-        return groups[idx].expenses
+    func logActivity(for groupID: String, text: String) {
+        guard let idx = groups.firstIndex(where: { $0.id == groupID }) else { return }
+        let entry = Activity(id: UUID(), text: text, date: Date())
+        groups[idx].activity.append(entry)
+        updateGlobalCaches()
     }
 
+    func expenses(for group: Group) -> [Expense] {
+        groups.first(where: { $0.id == group.id })?.expenses ?? []
+    }
+
+    // MARK: - Global metrics
+    private func updateGlobalCaches() {
+        let allExpenses = groups.flatMap { $0.expenses }
+        let expenseCount = allExpenses.count
+        let totalSum = allExpenses.reduce(0) { $0 + $1.amount }
+        let allActivities = groups.flatMap { $0.activity }.sorted { $0.date > $1.date }
+
+        DispatchQueue.main.async {
+            self.globalExpenseCount = expenseCount
+            self.globalExpenseSum = totalSum
+            self.globalActivityCount = allActivities.count
+            self.globalActivity = allActivities // ✅ feeds DashboardView
+        }
+    }
     // MARK: - Export/Invite
 
-    func exportCSV(for group: Group) -> URL? {
-        let header = "Title,Amount,PaidBy,Participants,Date,Category\n"
-        let rows = group.expenses.map { expense in
-            let participants = expense.participants.map { $0.name }.joined(separator: "|")
-            return "\"\(expense.title)\",\(expense.amount),\"\(expense.paidBy.name)\",\"\(participants)\",\(expense.date),\(expense.category.rawValue)"
-        }
-        let csv = header + rows.joined(separator: "\n")
-        let filename = "\(group.name)-expenses.csv"
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(filename)
-        do {
-            try csv.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
-        } catch {
-            print("CSV Export error: \(error)")
-            return nil
-        }
-    }
+       func exportCSV(for group: Group) -> URL? {
+           let header = "Title,Amount,PaidBy,Participants,Date,Category\n"
+           let rows = group.expenses.map { expense in
+               let participants = expense.participants.map { $0.name }.joined(separator: "|")
+               return "\"\(expense.title)\",\(expense.amount),\"\(expense.paidBy.name)\",\"\(participants)\",\(expense.date),\(expense.category.rawValue)"
+           }
+           let csv = header + rows.joined(separator: "\n")
+           let filename = "\(group.name)-expenses.csv"
+           let tempDir = FileManager.default.temporaryDirectory
+           let fileURL = tempDir.appendingPathComponent(filename)
+           do {
+               try csv.write(to: fileURL, atomically: true, encoding: .utf8)
+               return fileURL
+           } catch {
+               print("CSV Export error: \(error)")
+               return nil
+           }
+       }
 
-    func inviteLink(for group: Group) -> String {
-        // Example: You could use your domain and group id, or Firebase Dynamic Links
-        // Here, just a placeholder
-        return "https://chillpay.app/invite?group=\(group.id)"
-    }
+       func inviteLink(for group: Group) -> String {
+           // Example: You could use your domain and group id, or Firebase Dynamic Links
+           // Here, just a placeholder
+           return "https://chillpay.app/invite?group=\(group.id)"
+       }
 
-    func qrImage(for string: String) -> UIImage? {
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        let data = Data(string.utf8)
-        filter.setValue(data, forKey: "inputMessage")
-        guard let output = filter.outputImage else { return nil }
-        if let cgimg = context.createCGImage(output.transformed(by: .init(scaleX: 10, y: 10)), from: output.extent) {
-            return UIImage(cgImage: cgimg)
-        }
-        return nil
-    }
-}
+       func qrImage(for string: String) -> UIImage? {
+           let context = CIContext()
+           let filter = CIFilter.qrCodeGenerator()
+           let data = Data(string.utf8)
+           filter.setValue(data, forKey: "inputMessage")
+           guard let output = filter.outputImage else { return nil }
+           if let cgimg = context.createCGImage(output.transformed(by: .init(scaleX: 10, y: 10)), from: output.extent) {
+               return UIImage(cgImage: cgimg)
+           }
+           return nil
+       }
+   }

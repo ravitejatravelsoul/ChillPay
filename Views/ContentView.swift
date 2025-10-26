@@ -17,6 +17,7 @@ struct ContentView: View {
                 .environmentObject(friendsVM)
                 .padding(.bottom, 72)
 
+
         case .friends:
             NavigationView {
                 FriendsView(friendsVM: friendsVM)

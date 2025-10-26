@@ -60,6 +60,9 @@ struct GroupListView: View {
                 AddGroupView(groupVM: groupVM, friendsVM: friendsVM)
             }
         }
+        // --- Sync hooks for cross-tab updates ---
+        .onReceive(groupVM.$groups) { _ in }
+        .onReceive(friendsVM.$didUpdateExpenses) { _ in }
     }
 }
 

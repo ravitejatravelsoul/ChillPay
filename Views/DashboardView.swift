@@ -5,21 +5,19 @@ struct DashboardView: View {
     @EnvironmentObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
 
-    var currentUser: User? {
-        friendsVM.friends.first
-    }
+    @State private var recentActivities: [Activity] = []
+
+    // MARK: - Derived Data
+    var currentUser: User? { friendsVM.currentUser }
 
     var allExpenses: [Expense] {
-        groupVM.groups.flatMap { $0.expenses }
-    }
-
-    var allActivities: [Activity] {
-        groupVM.groups.flatMap { $0.activity }
-            .sorted(by: { $0.date > $1.date })
+        groupVM.groups.flatMap { $0.expenses } + friendsVM.directExpenses
     }
 
     var allBalances: [User: Double] {
         var balances: [User: Double] = [:]
+
+        // Group balances
         for group in groupVM.groups {
             let expenseVM = ExpenseViewModel(groupVM: groupVM)
             let groupBalances = expenseVM.getBalances(for: group)
@@ -27,6 +25,16 @@ struct DashboardView: View {
                 balances[user, default: 0.0] += balance
             }
         }
+
+        // Direct expenses
+        for expense in friendsVM.directExpenses {
+            let splitAmount = expense.amount / Double(expense.participants.count)
+            for user in expense.participants {
+                balances[user, default: 0.0] -= splitAmount
+            }
+            balances[expense.paidBy, default: 0.0] += expense.amount
+        }
+
         return balances
     }
 
@@ -34,20 +42,23 @@ struct DashboardView: View {
         guard let user = currentUser else { return 0 }
         return allBalances[user] ?? 0
     }
+
     var youOwe: Double {
         guard let user = currentUser else { return 0 }
         let value = allBalances[user] ?? 0
         return value < 0 ? abs(value) : 0
     }
+
     var youAreOwed: Double {
         guard let user = currentUser else { return 0 }
         let value = allBalances[user] ?? 0
         return value > 0 ? value : 0
     }
+
     var currencySymbol: String {
         groupVM.groups.first?.currency.symbol ?? "$"
     }
-    // Optionally use a generalized formatter for all currencies
+
     func formattedAmount(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -56,60 +67,66 @@ struct DashboardView: View {
         return formatter.string(from: NSNumber(value: amount)) ?? "\(currencySymbol)\(String(format: "%.2f", amount))"
     }
 
+    // MARK: - View Body
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
             VStack(spacing: 20) {
+
+                // MARK: - Header
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Dashboard")
                         .font(ChillTheme.headerFont)
                         .foregroundColor(ChillTheme.darkText)
 
-                    // Balance gradient card
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Total Balance")
                             .foregroundColor(.white.opacity(0.85))
                             .font(.headline)
+
                         Text(formattedAmount(totalBalance))
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
+                            .animation(.easeInOut, value: totalBalance)
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(ChillTheme.dashboardGradient)
                     .cornerRadius(ChillTheme.cardRadius)
 
-                    // Owe Chips
                     HStack(spacing: 20) {
-                        DashboardChip(label: "You Owe", value: formattedAmount(youOwe), color: ChillTheme.chipOwe)
-                        DashboardChip(label: "You Are Owed", value: formattedAmount(youAreOwed), color: ChillTheme.chipOwed)
+                        DashboardChip(label: "You Owe",
+                                      value: formattedAmount(youOwe),
+                                      color: ChillTheme.chipOwe)
+                        DashboardChip(label: "You Are Owed",
+                                      value: formattedAmount(youAreOwed),
+                                      color: ChillTheme.chipOwed)
                     }
                 }
                 .padding(.horizontal)
 
-                // Recent Activity - Only this part scrolls!
+                // MARK: - Recent Activity
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("Recent Activity")
                             .font(.headline)
                             .foregroundColor(ChillTheme.darkText)
                         Spacer()
-                        Button(action: {
-                            selectedTab = .activity // Switch to Activities tab!
-                        }) {
+                        Button(action: { selectedTab = .activity }) {
                             Text("View All")
                                 .font(.subheadline)
                                 .foregroundColor(.green)
                         }
                     }
+
                     ScrollView {
                         VStack(spacing: 0) {
-                            ForEach(allActivities.prefix(30)) { activity in
+                            ForEach(recentActivities.prefix(30)) { activity in
                                 ActivityRowV2(activity: activity)
                             }
                         }
                     }
-                    .frame(height: 340) // Adjust for your UI, e.g. 5-8 rows visible
+                    .frame(height: 340)
                 }
                 .padding()
                 .background(ChillTheme.card)
@@ -121,11 +138,41 @@ struct DashboardView: View {
             }
         }
         .navigationBarHidden(true)
+
+        // 🔥 Real-time updates for Dashboard
+        .onReceive(groupVM.$groups) { _ in
+            updateRecentActivity()
+        }
+        .onReceive(groupVM.$globalActivity) { _ in
+            updateRecentActivity()
+        }
+        .onReceive(friendsVM.$didUpdateExpenses) { _ in
+            updateRecentActivity()
+        }
+        .onAppear {
+            updateRecentActivity()
+        }
+    }
+
+    // MARK: - Helpers
+    private func updateRecentActivity() {
+        let merged = groupVM.globalActivity +
+                     friendsVM.directExpenses.map {
+                         let formattedAmount = String(format: "%.2f", $0.amount)
+                         return Activity(
+                             id: $0.id,
+                             text: "\($0.paidBy.name) paid \(formattedAmount) for \($0.title)",
+                             date: $0.date
+                         )
+                     }
+
+        recentActivities = merged.sorted { $0.date > $1.date }
+
+        print("DEBUG: [DashboardView] recentActivities refreshed — count:", recentActivities.count)
     }
 }
 
 // MARK: - Components
-
 struct DashboardChip: View {
     let label: String
     let value: String

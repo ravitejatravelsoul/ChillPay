@@ -3,6 +3,7 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
+// MARK: - Helper types
 struct UserPair: Hashable {
     let payer: String
     let payee: String
@@ -12,27 +13,44 @@ enum SettleMethod: String, Codable {
     case cash, upi, bank, other
 }
 
-class FriendsViewModel: ObservableObject {
+// MARK: - ViewModel
+final class FriendsViewModel: ObservableObject {
     static let shared = FriendsViewModel()
+
+    // Published properties that trigger view refreshes
     @Published var friends: [User] = []
     @Published var pendingInvites: [Invite] = []
-    @Published var directExpenses: [Expense] = []
-    @Published var groupExpenses: [Expense] = []
+    @Published var directExpenses: [Expense] = [] {
+        didSet {
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+    @Published var groupExpenses: [Expense] = [] {
+        didSet {
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
     @Published var didUpdateExpenses: Bool = false
     @Published var lastSettlement: SettlementResult?
+    @Published var currentUser: User? {
+        didSet {
+            print("DEBUG: [FriendsVM] currentUser didSet:", String(describing: currentUser))
+            fetchFriends()
+            loadDirectExpensesFromFirestore()
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
 
     private var allBalances: [UserPair: Double] = [:]
     private var deletedFriendIds: Set<String> = []
-
-    var currentUser: User? {
-        didSet {
-            fetchFriends()
-            loadDirectExpensesFromFirestore()
-        }
-    }
-    
     private let db = Firestore.firestore()
-    
+
     // MARK: - Sync with Groups
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
@@ -40,13 +58,15 @@ class FriendsViewModel: ObservableObject {
         let directUsers = Set(directExpenses.flatMap { $0.participants })
         let filteredUsers = allUsers.union(directUsers)
             .filter { !deletedFriendIds.contains($0.id) && $0.id != currentUser?.id }
+
         DispatchQueue.main.async {
             self.friends = Array(filteredUsers).sorted { $0.name < $1.name }
             self.groupExpenses = allGroupExpenses
+            self.objectWillChange.send()
         }
     }
-    
-    // --- Add Friend or Send Invite ---
+
+    // MARK: - Add Friend or Send Invite
     func addOrInviteFriend(email: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         guard let currentUser else {
             completion(.failure(FriendAddError.notLoggedIn))
@@ -63,9 +83,7 @@ class FriendsViewModel: ObservableObject {
                     completion(.success(false))
                     return
                 }
-                self.addFriendship(with: friendId, friendEmail: email) { result in
-                    completion(result)
-                }
+                self.addFriendship(with: friendId, friendEmail: email, completion: completion)
             } else {
                 self.sendInvite(toEmail: email)
                 completion(.success(false))
@@ -85,18 +103,21 @@ class FriendsViewModel: ObservableObject {
         let myId = currentUser.id
         let userRef = db.collection("users").document(myId)
         let friendRef = db.collection("users").document(friendId)
-        userRef.updateData([
-            "friends": FieldValue.arrayUnion([friendId])
-        ])
-        friendRef.updateData([
-            "friends": FieldValue.arrayUnion([myId])
-        ])
-        friendRef.getDocument { doc, error in
+
+        userRef.updateData(["friends": FieldValue.arrayUnion([friendId])])
+        friendRef.updateData(["friends": FieldValue.arrayUnion([myId])])
+
+        friendRef.getDocument { doc, _ in
             if let doc = doc, let data = doc.data() {
-                let user = User(id: friendId, name: data["name"] as? String ?? friendEmail, email: data["email"] as? String ?? friendEmail)
+                let user = User(id: friendId,
+                                name: data["name"] as? String ?? friendEmail,
+                                email: data["email"] as? String ?? friendEmail)
                 DispatchQueue.main.async {
-                    if !self.friends.contains(where: { $0.id == user.id }) && !self.deletedFriendIds.contains(user.id) && user.id != currentUser.id {
+                    if !self.friends.contains(where: { $0.id == user.id }) &&
+                        !self.deletedFriendIds.contains(user.id) &&
+                        user.id != currentUser.id {
                         self.friends.append(user)
+                        self.objectWillChange.send()
                     }
                 }
                 completion(.success(true))
@@ -114,98 +135,104 @@ class FriendsViewModel: ObservableObject {
         ])
         DispatchQueue.main.async {
             self.pendingInvites.append(Invite(id: UUID(), email: email))
+            self.objectWillChange.send()
         }
     }
-    
-    // --- Fetch Friends ---
+
+    // MARK: - Fetch Friends
     func fetchFriends() {
         guard let currentUser else { return }
         let userRef = db.collection("users").document(currentUser.id)
-        userRef.getDocument { doc, error in
+        userRef.getDocument { doc, _ in
             let directUsers = Set(self.directExpenses.flatMap { $0.participants })
-            guard let doc = doc, let data = doc.data(), let friendIds = data["friends"] as? [String], !friendIds.isEmpty else {
+            guard let doc = doc,
+                  let data = doc.data(),
+                  let friendIds = data["friends"] as? [String],
+                  !friendIds.isEmpty else {
                 DispatchQueue.main.async {
-                    let filteredUsers = directUsers.filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
-                    self.friends = Array(filteredUsers).sorted { $0.name < $1.name }
+                    let filtered = directUsers.filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
+                    self.friends = Array(filtered).sorted { $0.name < $1.name }
+                    self.objectWillChange.send()
                 }
                 return
             }
-            let filteredFriendIds = friendIds.filter { $0 != currentUser.id && !self.deletedFriendIds.contains($0) }
-            if filteredFriendIds.isEmpty {
+
+            let validIds = friendIds.filter { $0 != currentUser.id && !self.deletedFriendIds.contains($0) }
+            if validIds.isEmpty {
                 DispatchQueue.main.async {
-                    let filteredUsers = directUsers.filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
-                    self.friends = Array(filteredUsers).sorted { $0.name < $1.name }
+                    let filtered = directUsers.filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
+                    self.friends = Array(filtered).sorted { $0.name < $1.name }
+                    self.objectWillChange.send()
                 }
                 return
             }
-            self.db.collection("users").whereField(FieldPath.documentID(), in: filteredFriendIds).getDocuments { snapshot, error in
+
+            self.db.collection("users").whereField(FieldPath.documentID(), in: validIds).getDocuments { snapshot, _ in
                 guard let docs = snapshot?.documents else { return }
-                let users = docs.compactMap { doc in
-                    let data = doc.data()
-                    return User(id: doc.documentID, name: data["name"] as? String ?? "", email: data["email"] as? String)
+                let users = docs.map {
+                    let d = $0.data()
+                    return User(id: $0.documentID,
+                                name: d["name"] as? String ?? "",
+                                email: d["email"] as? String)
                 }
-                let allUsers = Set(users).union(directUsers)
+                let combined = Set(users).union(directUsers)
                     .filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
                 DispatchQueue.main.async {
-                    self.friends = Array(allUsers).sorted { $0.name < $1.name }
+                    self.friends = Array(combined).sorted { $0.name < $1.name }
+                    self.objectWillChange.send()
                 }
             }
         }
     }
-    
-    // --- Direct Expense Persistence ---
+
+    // MARK: - Direct Expense Persistence
     func saveDirectExpensesToFirestore() {
         guard let currentUser else { return }
-        let expensesData = directExpenses.map { $0.toDict() }
-        db.collection("users").document(currentUser.id).setData([
-            "directExpenses": expensesData
-        ], merge: true)
+        let data = directExpenses.map { $0.toDict() }
+        db.collection("users").document(currentUser.id)
+            .setData(["directExpenses": data], merge: true)
     }
 
     func loadDirectExpensesFromFirestore(completion: @escaping () -> Void = {}) {
         guard let currentUser else { completion(); return }
-        db.collection("users").document(currentUser.id).getDocument { doc, error in
-            guard let data = doc?.data(), let expensesArr = data["directExpenses"] as? [[String: Any]] else {
+        db.collection("users").document(currentUser.id).getDocument { doc, _ in
+            guard let data = doc?.data(),
+                  let arr = data["directExpenses"] as? [[String: Any]] else {
                 DispatchQueue.main.async { completion() }
                 return
             }
-            let expenses = expensesArr.compactMap { Expense.fromDict($0) }
+            let expenses = arr.compactMap { Expense.fromDict($0) }
             DispatchQueue.main.async {
                 self.directExpenses = expenses
-                self.refreshFriends()
                 self.didUpdateExpenses.toggle()
+                self.objectWillChange.send()
                 completion()
             }
         }
     }
 
-    // --- Calculate net balances between all users (Splitwise logic) ---
+    // MARK: - Balance calculation
     private func calculateAllBalances() {
         var balances: [UserPair: Double] = [:]
         for expense in directExpenses {
             let paidBy = expense.paidBy
             let participants = expense.participants
-            let splitAmount = expense.amount / Double(participants.count)
-            for user in participants {
-                if user.id == paidBy.id { continue }
-                let key = UserPair(payer: paidBy.id, payee: user.id)
-                balances[key, default: 0.0] += splitAmount
-                let reverseKey = UserPair(payer: user.id, payee: paidBy.id)
-                balances[reverseKey, default: 0.0] -= splitAmount
+            let share = expense.amount / Double(participants.count)
+            for user in participants where user.id != paidBy.id {
+                balances[UserPair(payer: paidBy.id, payee: user.id), default: 0.0] += share
+                balances[UserPair(payer: user.id, payee: paidBy.id), default: 0.0] -= share
             }
         }
-        self.allBalances = balances
+        allBalances = balances
     }
 
-    // --- Updated balance calculation ---
     func balanceWith(friend: User) -> Double {
-        guard let currentUser else { return 0 }
+        guard let me = currentUser else { return 0 }
         calculateAllBalances()
-        let key = UserPair(payer: currentUser.id, payee: friend.id)
-        return allBalances[key, default: 0.0]
+        return allBalances[UserPair(payer: me.id, payee: friend.id), default: 0.0]
     }
 
-    // MARK: - Settle and Clear Expenses
+    // MARK: - Settlement / Clear Expenses
     struct SettlementResult {
         let friend: User
         let amount: Double
@@ -214,20 +241,21 @@ class FriendsViewModel: ObservableObject {
     }
 
     func clearExpensesWith(friend: User, method: SettleMethod, note: String? = nil) {
-        guard let currentUser else { return }
-        directExpenses.removeAll { expense in
-            let ids = expense.participants.map { $0.id }
-            return ids.contains(currentUser.id) && ids.contains(friend.id)
+        guard let me = currentUser else { return }
+        directExpenses.removeAll { exp in
+            let ids = exp.participants.map { $0.id }
+            return ids.contains(me.id) && ids.contains(friend.id)
         }
+        didUpdateExpenses.toggle()
         saveDirectExpensesToFirestore()
         refreshFriends()
-        didUpdateExpenses.toggle()
         lastSettlement = SettlementResult(
             friend: friend,
             amount: abs(balanceWith(friend: friend)),
             method: method,
             message: note ?? "Settled via \(method.rawValue.capitalized)!"
         )
+        objectWillChange.send()
     }
 
     func isSettledWith(friend: User) -> Bool {
@@ -235,46 +263,41 @@ class FriendsViewModel: ObservableObject {
     }
 
     func removeFriend(_ friend: User) {
-        guard let currentUser else { return }
-        let myId = currentUser.id
-        let friendId = friend.id
-        let userRef = db.collection("users").document(myId)
-        let friendRef = db.collection("users").document(friendId)
-        userRef.updateData([
-            "friends": FieldValue.arrayRemove([friendId])
-        ])
-        friendRef.updateData([
-            "friends": FieldValue.arrayRemove([myId])
-        ])
-        deletedFriendIds.insert(friendId)
+        guard let me = currentUser else { return }
+        let myId = me.id
+        let fid = friend.id
+        db.collection("users").document(myId)
+            .updateData(["friends": FieldValue.arrayRemove([fid])])
+        db.collection("users").document(fid)
+            .updateData(["friends": FieldValue.arrayRemove([myId])])
+        deletedFriendIds.insert(fid)
         DispatchQueue.main.async {
-            self.friends.removeAll { $0.id == friendId }
+            self.friends.removeAll { $0.id == fid }
+            self.objectWillChange.send()
         }
     }
 
+    // MARK: - Refresh
     func refreshFriends() {
         var allUsers = Set<User>()
         allUsers.formUnion(friends)
         allUsers.formUnion(directExpenses.flatMap { $0.participants })
-        if let me = currentUser {
-            allUsers.insert(me)
-        }
-        self.friends = Array(allUsers)
+        if let me = currentUser { allUsers.insert(me) }
+
+        friends = Array(allUsers)
             .filter { !deletedFriendIds.contains($0.id) && $0.id != currentUser?.id }
             .sorted { $0.name < $1.name }
+
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
     }
-    // --- Sorting ---
+
+    // MARK: - Sorting
     func sortFriendsByOwesYou(_ sort: Bool) {
         if sort {
-            // Sort descending by balance (friends who owe you first)
-            friends.sort {
-                balanceWith(friend: $0) > balanceWith(friend: $1)
-            }
+            friends.sort { balanceWith(friend: $0) > balanceWith(friend: $1) }
         } else {
-            // Sort alphabetically
             friends.sort { $0.name.lowercased() < $1.name.lowercased() }
         }
         DispatchQueue.main.async {
@@ -282,68 +305,73 @@ class FriendsViewModel: ObservableObject {
         }
     }
 
+    // MARK: - History
     func historyWith(friend: User) -> [ActivityEntry] {
-        guard let currentUser else { return [] }
-        let directExpenseHistory: [ActivityEntry] = directExpenses
+        guard let me = currentUser else { return [] }
+        let entries: [ActivityEntry] = directExpenses
             .filter { $0.participants.contains(where: { $0.id == friend.id }) }
-            .map { expense in
-                let whoPaid = expense.paidBy.id == currentUser.id ? "You" : expense.paidBy.name
-                return ActivityEntry(
-                    id: expense.id,
-                    text: "\(whoPaid) paid \(expense.participants.map { $0.name }.joined(separator: ", ")) ₹\(String(format: "%.2f", expense.amount)) for \(expense.title)",
-                    date: expense.date
-                )
+            .map {
+                let who = $0.paidBy.id == me.id ? "You" : $0.paidBy.name
+                return ActivityEntry(id: $0.id,
+                                     text: "\(who) paid \($0.participants.map { $0.name }.joined(separator: ", ")) ₹\(String(format: "%.2f", $0.amount)) for \($0.title)",
+                                     date: $0.date)
             }
-        return directExpenseHistory.sorted { $0.date > $1.date }
+        return entries.sorted { $0.date > $1.date }
     }
 
+    // MARK: - Aggregate direct/group expenses for dashboard/analytics
     func allExpensesWith(friend: User) -> [Expense] {
-        guard let currentUser else { return [] }
+        guard let me = currentUser else { return [] }
         let direct = directExpenses.filter {
-            ($0.paidBy.id == friend.id || $0.paidBy.id == currentUser.id) &&
+            ($0.paidBy.id == friend.id || $0.paidBy.id == me.id) &&
             $0.participants.contains(where: { $0.id == friend.id })
         }
-        return direct.sorted { $0.date > $1.date }
+        let group = groupExpenses.filter {
+            $0.participants.contains(where: { $0.id == friend.id })
+        }
+        return (direct + group).sorted { $0.date > $1.date }
     }
 
+    // MARK: - Add/Edit Expense
     func addDirectExpense(to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
-        guard let currentUser else { return }
-        let curUserObj = friends.first(where: { $0.id == currentUser.id }) ?? currentUser
-        let friendObj = friends.first(where: { $0.id == friend.id }) ?? friend
-        if deletedFriendIds.contains(friendObj.id) || friendObj.id == currentUser.id { return }
+        guard let me = currentUser else { return }
+        let meObj = friends.first(where: { $0.id == me.id }) ?? me
+        let frObj = friends.first(where: { $0.id == friend.id }) ?? friend
+
+        if deletedFriendIds.contains(frObj.id) || frObj.id == me.id { return }
+
         let expense = Expense(
             id: UUID(),
             title: description,
             amount: amount,
-            paidBy: paidByMe ? curUserObj : friendObj,
-            participants: [curUserObj, friendObj],
+            paidBy: paidByMe ? meObj : frObj,
+            participants: [meObj, frObj],
             date: date,
             groupID: nil
         )
+
         directExpenses.append(expense)
-        var updatedFriends = Set(friends)
-        updatedFriends.insert(curUserObj)
-        updatedFriends.insert(friendObj)
-        friends = Array(updatedFriends)
-            .filter { !deletedFriendIds.contains($0.id) && $0.id != currentUser.id }
-            .sorted { $0.name < $1.name }
+        didUpdateExpenses.toggle()
         saveDirectExpensesToFirestore()
         refreshFriends()
-        didUpdateExpenses.toggle()
+        objectWillChange.send()
     }
 
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
-        guard let currentUser else { return }
+        guard let me = currentUser else { return }
         if let idx = directExpenses.firstIndex(where: { $0.id == expense.id }) {
-            let curUserObj = friends.first(where: { $0.id == currentUser.id }) ?? currentUser
-            let friendObj = friends.first(where: { $0.id == friend.id }) ?? friend
+            let meObj = friends.first(where: { $0.id == me.id }) ?? me
+            let frObj = friends.first(where: { $0.id == friend.id }) ?? friend
+
             directExpenses[idx].title = description
             directExpenses[idx].amount = amount
-            directExpenses[idx].paidBy = paidByMe ? curUserObj : friendObj
+            directExpenses[idx].paidBy = paidByMe ? meObj : frObj
             directExpenses[idx].date = date
+
+            didUpdateExpenses.toggle()
             saveDirectExpensesToFirestore()
             refreshFriends()
-            didUpdateExpenses.toggle()
+            objectWillChange.send()
         }
     }
 
@@ -364,6 +392,7 @@ class FriendsViewModel: ObservableObject {
     }
 }
 
+// MARK: - Error
 enum FriendAddError: Error {
     case unknown
     case notLoggedIn

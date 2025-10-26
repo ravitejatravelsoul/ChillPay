@@ -2,18 +2,18 @@ import SwiftUI
 
 struct FriendDetailView: View {
     let friend: User
-    @ObservedObject var friendsVM: FriendsViewModel
+    let friendsVM: FriendsViewModel
+    let groupVM: GroupViewModel
+    let allExpenses: [Expense]
+    let balance: Double
+
     @State private var showAddExpense = false
     @State private var selectedExpense: Expense?
     @State private var showDeleteAlert = false
     @Environment(\.presentationMode) private var presentationMode
 
-    var allExpensesWithFriend: [Expense] {
-        friendsVM.allExpensesWith(friend: friend)
-    }
-
     var isSettled: Bool {
-        friendsVM.isSettledWith(friend: friend)
+        abs(balance) < 0.01
     }
 
     var body: some View {
@@ -42,7 +42,6 @@ struct FriendDetailView: View {
                     .cornerRadius(24)
 
                     // Balance Card: Always show amount
-                    let balance = friendsVM.balanceWith(friend: friend)
                     let epsilon = 0.01
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Balance with \(friend.name):")
@@ -103,12 +102,12 @@ struct FriendDetailView: View {
                             .font(.title3).bold()
                             .foregroundColor(.white)
 
-                        if allExpensesWithFriend.isEmpty {
+                        if allExpenses.isEmpty {
                             Text("No expenses yet.")
                                 .foregroundColor(.gray)
                                 .padding(.vertical)
                         } else {
-                            ForEach(allExpensesWithFriend) { expense in
+                            ForEach(allExpenses) { expense in
                                 FriendExpenseRow(
                                     expense: expense,
                                     currentUser: friendsVM.currentUser ?? User(id: UUID().uuidString, name: "Unknown", email: nil),
@@ -172,11 +171,8 @@ struct FriendDetailView: View {
                     title: Text("Remove Friend"),
                     message: Text("Are you sure you want to remove \(friend.name) from your friends list?"),
                     primaryButton: .destructive(Text("Remove")) {
-                        // FIX: Remove friend and prevent immediate re-adding
                         friendsVM.removeFriend(friend)
-                        // Also clear any pending expense edits for this friend
                         selectedExpense = nil
-                        // Dismiss detail sheet immediately
                         presentationMode.wrappedValue.dismiss()
                     },
                     secondaryButton: .cancel()

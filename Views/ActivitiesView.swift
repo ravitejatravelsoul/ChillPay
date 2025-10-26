@@ -15,7 +15,6 @@ struct ActivitiesView: View {
                 ChillTheme.background.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Use environment injection for GlobalAnalyticsView, NOT initializer
                         GlobalAnalyticsView()
                             .environmentObject(groupVM)
                             .padding(.horizontal)
@@ -47,6 +46,8 @@ struct ActivitiesView: View {
             .navigationTitle("Activities")
             .preferredColorScheme(.dark)
         }
+        // If you want to update activity timeline when direct expenses change, add below:
+        // .onReceive(friendsVM.$didUpdateExpenses) { _ in }
     }
 }
 
