@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import Combine
 
 struct CategoryTotal: Identifiable {
     let id = UUID()
@@ -13,39 +14,63 @@ struct MemberTotal: Identifiable {
     let total: Double
 }
 
+// MARK: - Time Range Enum
+enum AnalyticsTimeRange: String, CaseIterable, Identifiable {
+    case overall = "Overall"
+    case yearly = "Yearly"
+    case monthly = "Monthly"
+    case weekly = "Weekly"
+    var id: String { rawValue }
+}
+
 struct GlobalAnalyticsView: View {
     @EnvironmentObject var groupVM: GroupViewModel
+    @EnvironmentObject var friendsVM: FriendsViewModel
 
+    @State private var combinedExpenses: [Expense] = []
+    @State private var refreshCancellable: AnyCancellable?
+    @State private var debugCounter = 0
+    @State private var selectedRange: AnalyticsTimeRange = .overall
+
+    // MARK: - Derived Metrics
+    private var allUsers: [User] {
+        Array(Set(groupVM.groups.flatMap { $0.members })) + Array(Set(friendsVM.friends))
+    }
+
+    private var currencySymbol: String {
+        groupVM.groups.first?.currency.symbol ?? "$"
+    }
+
+    private var categoryTotals: [CategoryTotal] {
+        var dict = [ExpenseCategory: Double]()
+        for exp in combinedExpenses where exp.amount.isFinite && exp.amount > 0 {
+            dict[exp.category, default: 0] += exp.amount
+        }
+        let array = dict.map { CategoryTotal(category: $0.key, total: $0.value) }
+        return array.sorted { $0.total > $1.total }
+    }
+
+    private var memberTotals: [MemberTotal] {
+        var dict = [User: Double]()
+        for exp in combinedExpenses where exp.amount.isFinite && exp.amount > 0 {
+            dict[exp.paidBy, default: 0] += exp.amount
+        }
+        let array = dict.map { MemberTotal(user: $0.key, total: $0.value) }
+        return array.sorted { $0.total > $1.total }
+    }
+
+    private var totalSpent: Double {
+        combinedExpenses.reduce(0) { $0 + max(0, $1.amount) }
+    }
+
+    private var averagePerMember: Double {
+        guard !allUsers.isEmpty else { return 0 }
+        return totalSpent / Double(allUsers.count)
+    }
+
+    // MARK: - View
     var body: some View {
-        // Prepare data
-        let allExpenses: [Expense] = groupVM.groups.flatMap { $0.expenses }
-        let allUsers: [User] = Array(Set(groupVM.groups.flatMap { $0.members }))
-        let currencySymbol: String = groupVM.groups.first?.currency.symbol ?? "$"
-
-        let categoryTotals: [CategoryTotal] = {
-            var dict = [ExpenseCategory: Double]()
-            for exp in allExpenses {
-                dict[exp.category, default: 0] += exp.amount
-            }
-            let array = dict.map { CategoryTotal(category: $0.key, total: $0.value) }
-            return array.sorted { $0.total > $1.total }
-        }()
-
-        let memberTotals: [MemberTotal] = {
-            var dict = [User: Double]()
-            for exp in allExpenses {
-                dict[exp.paidBy, default: 0] += exp.amount
-            }
-            let array = dict.map { MemberTotal(user: $0.key, total: $0.value) }
-            return array.sorted { $0.total > $1.total }
-        }()
-
-        let totalSpent = allExpenses.reduce(0) { $0 + $1.amount }
-        let averagePerMember = allUsers.isEmpty ? 0 : totalSpent / Double(allUsers.count)
-        let totalSpentString = String(format: "%.2f", totalSpent)
-        let averagePerMemberString = String(format: "%.2f", averagePerMember)
-
-        return ZStack {
+        ZStack {
             ChillTheme.background.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -56,15 +81,27 @@ struct GlobalAnalyticsView: View {
                         .padding(.top, 20)
                         .padding(.bottom, 8)
 
+                    // Filter Picker
+                    Picker("Range", selection: $selectedRange) {
+                        ForEach(AnalyticsTimeRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .onChange(of: selectedRange) { _ in
+                        recomputeAnalytics()
+                    }
+
                     // Summary Card
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Summary")
                             .font(.headline)
                             .foregroundColor(.white)
-                        Text("Total spent: \(currencySymbol)\(totalSpentString)").foregroundColor(.white)
-                        Text("Total expenses: \(allExpenses.count)").foregroundColor(.white)
+                        Text("Total spent: \(currencySymbol)\(String(format: "%.2f", totalSpent))").foregroundColor(.white)
+                        Text("Total expenses: \(combinedExpenses.count)").foregroundColor(.white)
                         Text("Unique members: \(allUsers.count)").foregroundColor(.white)
-                        Text("Average per member: \(currencySymbol)\(averagePerMemberString)").foregroundColor(.white)
+                        Text("Average per member: \(currencySymbol)\(String(format: "%.2f", averagePerMember))").foregroundColor(.white)
                     }
                     .padding()
                     .background(ChillTheme.card)
@@ -83,26 +120,7 @@ struct GlobalAnalyticsView: View {
                                 )
                                 .foregroundStyle(Color.blue)
                             }
-                            .chartXAxis {
-                                AxisMarks(position: .bottom) { value in
-                                    AxisValueLabel() {
-                                        if let cat = value.as(String.self) {
-                                            Text(cat).foregroundColor(.white)
-                                        }
-                                    }
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading) { value in
-                                    AxisValueLabel() {
-                                        if let num = value.as(Double.self) {
-                                            Text(String(format: "%.0f", num)).foregroundColor(.white)
-                                        }
-                                    }
-                                }
-                            }
                             .frame(height: 200)
-                            .background(Color.clear)
                         }
                         .padding()
                         .background(ChillTheme.card)
@@ -122,26 +140,7 @@ struct GlobalAnalyticsView: View {
                                 )
                                 .foregroundStyle(Color.green)
                             }
-                            .chartXAxis {
-                                AxisMarks(position: .bottom) { value in
-                                    AxisValueLabel() {
-                                        if let name = value.as(String.self) {
-                                            Text(name).foregroundColor(.white)
-                                        }
-                                    }
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading) { value in
-                                    AxisValueLabel() {
-                                        if let num = value.as(Double.self) {
-                                            Text(String(format: "%.0f", num)).foregroundColor(.white)
-                                        }
-                                    }
-                                }
-                            }
                             .frame(height: 200)
-                            .background(Color.clear)
                         }
                         .padding()
                         .background(ChillTheme.card)
@@ -152,6 +151,63 @@ struct GlobalAnalyticsView: View {
                 .padding(.bottom, 24)
             }
         }
+        .onAppear {
+            print("🟢 [GlobalAnalyticsView] onAppear – attaching observers")
+            recomputeAnalytics()
+            setupReactiveRefresh()
+        }
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Logic
+    private func recomputeAnalytics() {
+        debugCounter += 1
+        let now = Date()
+        let calendar = Calendar.current
+
+        let groupExpenses = groupVM.groups.flatMap { $0.expenses }
+        let directExpenses = friendsVM.directExpenses
+        var merged = (groupExpenses + directExpenses)
+            .filter { $0.amount.isFinite && $0.amount >= 0 }
+
+        // ⏱ Filter by selected time range
+        switch selectedRange {
+        case .overall:
+            break
+        case .yearly:
+            merged = merged.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .year) }
+        case .monthly:
+            merged = merged.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .month) }
+        case .weekly:
+            merged = merged.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .weekOfYear) }
+        }
+
+        combinedExpenses = merged
+
+        print("""
+        ✅ [GlobalAnalyticsView] recompute #\(debugCounter)
+        - Range: \(selectedRange.rawValue)
+        - groupExpenses: \(groupExpenses.count)
+        - directExpenses: \(directExpenses.count)
+        - totalCombined (filtered): \(merged.count)
+        - totalSpent: \(String(format: "%.2f", totalSpent))
+        """)
+    }
+
+    private func setupReactiveRefresh() {
+        refreshCancellable?.cancel()
+
+        refreshCancellable = Publishers.Merge3(
+            groupVM.$groups.map { _ in "groupVM.groups" },
+            friendsVM.$directExpenses.map { _ in "friendsVM.directExpenses" },
+            friendsVM.$didUpdateExpenses.map { _ in "friendsVM.didUpdateExpenses" }
+        )
+        .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+        .sink { source in
+            print("⚡️ [GlobalAnalyticsView] Triggered by \(source)")
+            recomputeAnalytics()
+        }
+
+        print("🟣 [GlobalAnalyticsView] Combine observers attached")
     }
 }

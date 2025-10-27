@@ -11,20 +11,22 @@ struct AnalyticsView: View {
     @State private var allExpensesForAnalytics: [Expense] = []
     @State private var globalExpenses: [Expense] = []
     @State private var refreshCancellable: AnyCancellable?
+    @State private var debugCounter = 0
 
-    // MARK: - Derived metrics
+    // MARK: - Computed Metrics
     private var totalSpent: Double {
-        allExpensesForAnalytics.reduce(0) { $0 + $1.amount }
+        allExpensesForAnalytics.reduce(0) { $0 + max(0, $1.amount) }
     }
 
     private var averagePerMember: Double {
         guard !group.members.isEmpty else { return 0 }
-        return totalSpent / Double(group.members.count)
+        let avg = totalSpent / Double(group.members.count)
+        return avg.isFinite ? avg : 0
     }
 
     private var categoryTotals: [(ExpenseCategory, Double)] {
         var dict: [ExpenseCategory: Double] = [:]
-        for exp in allExpensesForAnalytics {
+        for exp in allExpensesForAnalytics where exp.amount.isFinite && exp.amount > 0 {
             dict[exp.category, default: 0] += exp.amount
         }
         return dict.sorted { $0.value > $1.value }
@@ -32,27 +34,27 @@ struct AnalyticsView: View {
 
     private var memberTotals: [(User, Double)] {
         var dict: [User: Double] = [:]
-        for exp in allExpensesForAnalytics {
+        for exp in allExpensesForAnalytics where exp.amount.isFinite && exp.amount > 0 {
             dict[exp.paidBy, default: 0] += exp.amount
         }
         return dict.sorted { $0.value > $1.value }
     }
 
-    // Global overview
     private var globalTotalSpent: Double {
-        globalExpenses.reduce(0) { $0 + $1.amount }
+        globalExpenses.reduce(0) { $0 + max(0, $1.amount) }
     }
 
     private var globalExpenseCount: Int {
         globalExpenses.count
     }
 
-    // MARK: - View
+    // MARK: - Body
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
 
+                    // --- Global Overview ---
                     GroupBox(label: Text("Global Overview").font(.headline)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", globalTotalSpent))")
@@ -61,6 +63,7 @@ struct AnalyticsView: View {
                         .padding(.vertical, 4)
                     }
 
+                    // --- Group Summary ---
                     GroupBox(label: Text("Group Summary (\(group.name))").font(.headline)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", totalSpent))")
@@ -70,6 +73,7 @@ struct AnalyticsView: View {
                         .padding(.vertical, 4)
                     }
 
+                    // --- Category Chart ---
                     if !categoryTotals.isEmpty {
                         GroupBox(label: Text("By Category").font(.headline)) {
                             Chart(categoryTotals, id: \.0) { item in
@@ -77,12 +81,14 @@ struct AnalyticsView: View {
                                     x: .value("Category", item.0.displayName),
                                     y: .value("Amount", item.1)
                                 )
-                                .foregroundStyle(Color.blue)
+                                .foregroundStyle(.blue)
                             }
+                            .id(debugCounter) // force refresh
                             .frame(height: 200)
                         }
                     }
 
+                    // --- Payer Chart ---
                     if !memberTotals.isEmpty {
                         GroupBox(label: Text("By Payer").font(.headline)) {
                             Chart(memberTotals, id: \.0) { item in
@@ -90,8 +96,9 @@ struct AnalyticsView: View {
                                     x: .value("Member", item.0.name),
                                     y: .value("Amount", item.1)
                                 )
-                                .foregroundStyle(Color.green)
+                                .foregroundStyle(.green)
                             }
+                            .id(debugCounter)
                             .frame(height: 200)
                         }
                     }
@@ -107,7 +114,7 @@ struct AnalyticsView: View {
             }
         }
         .onAppear {
-            print("🟢 [AnalyticsView] onAppear — initializing Combine listeners")
+            print("🟢 [AnalyticsView] onAppear — setting up observers")
             recomputeAnalytics()
             setupReactiveRefresh()
         }
@@ -115,40 +122,47 @@ struct AnalyticsView: View {
 
     // MARK: - Logic
     private func recomputeAnalytics() {
-        print("🟣 [AnalyticsView] recomputeAnalytics() triggered")
+        debugCounter += 1
 
-        // Direct expenses that include members of this group
+        // --- Direct (friend) expenses involving group members ---
         let directExpenses = friendsVM.directExpenses.filter { exp in
             exp.participants.contains(where: { group.members.contains($0) })
         }
-        allExpensesForAnalytics = group.expenses + directExpenses
 
+        // --- Combine group + direct ---
+        allExpensesForAnalytics = (group.expenses + directExpenses)
+            .filter { $0.amount.isFinite && $0.amount >= 0 }
+
+        // --- Global combination across all groups + all friends ---
         let allGroupExpenses = groupVM.groups.flatMap { $0.expenses }
-        globalExpenses = allGroupExpenses + friendsVM.directExpenses
+        globalExpenses = (allGroupExpenses + friendsVM.directExpenses)
+            .filter { $0.amount.isFinite && $0.amount >= 0 }
 
         print("""
-              🔍 [AnalyticsView] Group '\(group.name)' recomputed
-              - group.expenses: \(group.expenses.count)
-              - directExpenses (matching group): \(directExpenses.count)
-              - allExpensesForAnalytics: \(allExpensesForAnalytics.count)
-              - globalExpenses total: \(globalExpenses.count)
-              """)
+        ✅ [AnalyticsView] recompute #\(debugCounter)
+        - groupExpenses: \(group.expenses.count)
+        - directExpenses (matching group): \(directExpenses.count)
+        - allExpensesForAnalytics: \(allExpensesForAnalytics.count)
+        - globalExpenses total: \(globalExpenses.count)
+        """)
     }
 
     private func setupReactiveRefresh() {
         refreshCancellable?.cancel()
 
-        refreshCancellable = Publishers.Merge3(
-            groupVM.$groups.map { _ in "groupVM" },
-            friendsVM.$directExpenses.map { _ in "directExpenses" },
-            friendsVM.$didUpdateExpenses.map { _ in "didUpdateExpenses" }
-        )
-        .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-        .sink { source in
-            print("🟠 [AnalyticsView] Combine trigger from \(source)")
-            recomputeAnalytics()
-        }
+        let sources: [AnyPublisher<String, Never>] = [
+            groupVM.$groups.map { _ in "groupVM.groups" }.eraseToAnyPublisher(),
+            friendsVM.$directExpenses.map { _ in "friendsVM.directExpenses" }.eraseToAnyPublisher(),
+            friendsVM.$didUpdateExpenses.map { _ in "friendsVM.didUpdateExpenses" }.eraseToAnyPublisher()
+        ]
 
-        print("🟢 [AnalyticsView] Combine subscriptions attached")
+        refreshCancellable = Publishers.MergeMany(sources)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { source in
+                print("⚡️ [AnalyticsView] Triggered by \(source)")
+                recomputeAnalytics()
+            }
+
+        print("🟣 [AnalyticsView] Combine observers attached")
     }
 }
