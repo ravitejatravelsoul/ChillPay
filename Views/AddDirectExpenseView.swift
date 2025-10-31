@@ -1,9 +1,6 @@
 import SwiftUI
 import Foundation
 
-// If your models are in a separate module, uncomment this line:
-// import ChillPayModels
-
 struct AddDirectExpenseView: View {
     let friend: User
     @ObservedObject var friendsVM: FriendsViewModel
@@ -124,11 +121,7 @@ struct AddDirectExpenseView: View {
                         .foregroundColor(.white)
                     Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
                         ForEach(ExpenseCategory.allCases, id: \.self) { cat in
-                            HStack {
-                                Text(cat.emoji)
-                                Text(cat.displayName)
-                            }
-                            .tag(cat)
+                            Text("\(cat.emoji) \(cat.displayName)").tag(cat)
                         }
                     }
                     .pickerStyle(MenuPickerStyle())

@@ -129,11 +129,7 @@ struct AddExpenseView: View {
                         .foregroundColor(.white)
                     Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
                         ForEach(ExpenseCategory.allCases, id: \.self) { cat in
-                            HStack {
-                                Text(cat.emoji)
-                                Text(cat.displayName)
-                            }
-                            .tag(cat)
+                            Text("\(cat.emoji) \(cat.displayName)").tag(cat)
                         }
                     }
                     .pickerStyle(MenuPickerStyle())

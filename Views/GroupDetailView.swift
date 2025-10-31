@@ -202,8 +202,14 @@ struct ExpenseRow: View {
                 Circle()
                     .fill(expense.category.color.opacity(0.18))
                     .frame(width: 38, height: 38)
-                Text(expense.category.emoji)
-                    .font(.system(size: 20))
+                // --- UPDATED: Show both emoji AND category name ---
+                HStack(spacing: 4) {
+                    Text(expense.category.emoji)
+                        .font(.system(size: 20))
+                    Text(expense.category.displayName)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(expense.title)
