@@ -240,12 +240,22 @@ final class FriendsViewModel: ObservableObject {
         let message: String
     }
 
+    /// Updated: ensure all expenses, even old ones, are always cleared if both users are participants
     func clearExpensesWith(friend: User, method: SettleMethod, note: String? = nil) {
         guard let me = currentUser else { return }
+        let beforeCount = directExpenses.count
+        let toClear = directExpenses.filter { exp in
+            let ids = exp.participants.map { $0.id }
+            // Backward compatible: check both current and friend in participants, ignore other fields
+            return ids.contains(me.id) && ids.contains(friend.id)
+        }
+        print("DEBUG: Will clear \(toClear.count) expenses for settlement. Titles: \(toClear.map { $0.title })")
         directExpenses.removeAll { exp in
             let ids = exp.participants.map { $0.id }
             return ids.contains(me.id) && ids.contains(friend.id)
         }
+        let afterCount = directExpenses.count
+        print("DEBUG: Cleared \(beforeCount - afterCount) expenses for \(friend.name). Remaining: \(afterCount)")
         didUpdateExpenses.toggle()
         saveDirectExpensesToFirestore()
         refreshFriends()

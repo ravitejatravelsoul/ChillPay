@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct FriendDetailView: View {
     let friend: User
@@ -10,6 +11,9 @@ struct FriendDetailView: View {
     @State private var showAddExpense = false
     @State private var selectedExpense: Expense?
     @State private var showDeleteAlert = false
+    @State private var showSettleConfirmation = false
+    @State private var showCelebration = false
+    @State private var celebrationMessage = ""
     @Environment(\.presentationMode) private var presentationMode
 
     var isSettled: Bool {
@@ -80,7 +84,7 @@ struct FriendDetailView: View {
                         }
                         if abs(balance) > epsilon {
                             Button(action: {
-                                friendsVM.settleUpWith(friend: friend)
+                                showSettleConfirmation = true
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.right.arrow.left.circle")
@@ -178,6 +182,21 @@ struct FriendDetailView: View {
                     secondaryButton: .cancel()
                 )
             }
+            // Settle Up confirmation alert
+            .alert(isPresented: $showSettleConfirmation) {
+                Alert(
+                    title: Text("Settle Up"),
+                    message: Text("Are you sure you want to settle up all expenses with \(friend.name)?"),
+                    primaryButton: .destructive(Text("Settle")) {
+                        friendsVM.settleUpWith(friend: friend)
+                        celebrationMessage = "You are settled up with \(friend.name)!"
+                        showCelebration = true
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
+            // Celebration Popup after settle up
+            CelebrationPopup(show: $showCelebration, message: celebrationMessage)
         }
     }
 }
