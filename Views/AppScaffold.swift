@@ -1,10 +1,3 @@
-//
-//  AppScaffold.swift
-//  ChillPay
-//
-//  Created by Raviteja on 9/29/25.
-//
-
 
 import SwiftUI
 

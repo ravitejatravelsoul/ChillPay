@@ -24,45 +24,58 @@ struct LoginView: View {
                         .foregroundColor(.red)
                         .font(.caption)
                 }
-            }.padding(.horizontal, 20)
+            }
+            .padding(.horizontal, 20)
 
             Button(action: {
                 errorMessage = nil
-                authService.signInWithEmail(email: email, password: password)
-                // Delay to let AuthService update isEmailVerified (ideally use completion handlers in AuthService)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    if authService.isAuthenticated {
-                        // --- SET currentUser in FriendsViewModel after login! ---
-                        if let userProfile = authService.user {
+                authService.signInWithEmail(
+                    email: email,
+                    password: password,
+                    onLoginProgress: { loginMsg in
+                        // This completion handler now handles all UI update + navigation!
+                        if let msg = loginMsg {
+                            errorMessage = msg
+                            onLoginError?(msg)
+                        } else if authService.isAuthenticated, let userProfile = authService.user {
+                            // --- SET currentUser in FriendsViewModel after login! ---
                             FriendsViewModel.shared.currentUser = User(
                                 id: userProfile.uid,
                                 name: userProfile.name,
                                 email: userProfile.email
                             )
-                        }
-                        if authService.isEmailVerified {
-                            onLoginSuccess()
+                            if authService.isEmailVerified {
+                                onLoginSuccess()
+                            } else {
+                                let msg = "Please verify your email before logging in."
+                                errorMessage = msg
+                                onLoginError?(msg)
+                            }
                         } else {
-                            let msg = "Please verify your email before logging in."
+                            let msg = "Invalid credentials or user does not exist."
                             errorMessage = msg
                             onLoginError?(msg)
                         }
-                    } else {
-                        let msg = "Invalid credentials or user does not exist."
-                        errorMessage = msg
-                        onLoginError?(msg)
                     }
-                }
+                )
             }) {
-                Text("Login")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ChillTheme.accent)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
+                if authService.isCreatingUserProfile {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: ChillTheme.accent))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                } else {
+                    Text("Login")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
             }
+            .background(ChillTheme.accent)
+            .foregroundColor(.white)
+            .cornerRadius(14)
             .padding(.horizontal, 24)
+            .disabled(authService.isCreatingUserProfile) // Block login while creating user profile
 
             Button("Forgot Password?") {
                 if email.isEmpty {

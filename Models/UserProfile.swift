@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserProfile: Identifiable, Codable {
+struct UserProfile: Identifiable, Codable, Equatable {
     let id: String
     let uid: String
     let name: String

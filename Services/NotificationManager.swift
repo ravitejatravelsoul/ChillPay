@@ -1,41 +1,58 @@
 import Foundation
 import UserNotifications
 
-/// Provides a simple wrapper around `UNUserNotificationCenter` to handle
-/// requesting notification permissions and scheduling local reminders.
-/// This manager is used by `ExpenseDetailView` to remind users of
-/// outstanding expenses.  All notifications are one‑off and non‑repeating.
 class NotificationManager {
     static let shared = NotificationManager()
     private init() {}
-    
-    /// Request authorization to send notifications if not already granted.
+
+    // Only for monthly outstanding reminder (local)
+    func scheduleMonthlyOutstandingReminder() {
+        let content = UNMutableNotificationContent()
+        content.title = "Monthly Reminder"
+        content.body = "You have outstanding expenses to review in ChillPay!"
+        content.sound = .default
+
+        var dateComponents = DateComponents()
+        dateComponents.day = 1 // 1st day of the month
+        dateComponents.hour = 10 // 10am
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "monthlyOutstandingReminder", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule monthly outstanding reminder: \(error)")
+            }
+        }
+    }
+
     func requestAuthorizationIfNeeded() {
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             guard settings.authorizationStatus == .notDetermined else { return }
-            center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         }
     }
-    
-    /// Schedule a single local notification at the specified date/time.
-    /// - Parameters:
-    ///   - title: The title displayed in the notification banner.
-    ///   - body: Additional descriptive text.
-    ///   - date: The exact date/time at which to fire the notification.
-    func scheduleNotification(title: String, body: String, date: Date) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        // Break the date into components for the calendar trigger
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request) { error in
+
+    // For all push notifications (to other users)
+    func sendPushNotification(to user: User, title: String, body: String) {
+        guard let url = URL(string: "https://us-central1-chillpay-358ad.cloudfunctions.net/sendPush") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = [
+            "recipientUserId": user.id,
+            "title": title,
+            "body": body
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload, options: [])
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Failed to schedule notification: \(error)")
+                print("Failed to send push notification: \(error)")
+            } else {
+                print("Push notification sent to \(user.name)")
             }
         }
+        task.resume()
     }
 }

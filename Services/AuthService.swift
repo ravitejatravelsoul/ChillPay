@@ -2,9 +2,6 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
-/// AuthService handles Firebase Authentication + basic Firestore user document CRUD.
-/// This version ensures FriendsViewModel.shared.currentUser is set/cleared so
-/// add-or-invite friend flows have a valid current user.
 class AuthService: ObservableObject {
     static let shared = AuthService()
     @Published var user: UserProfile?
@@ -13,6 +10,9 @@ class AuthService: ObservableObject {
 
     private let db = Firestore.firestore()
     private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
+    
+    // Track if user account/profile creation is still pending
+    @Published var isCreatingUserProfile = false
 
     init() {
         // Listen for auth state changes (logout, user deleted, etc)
@@ -21,14 +21,11 @@ class AuthService: ObservableObject {
             if let user = user {
                 self.isAuthenticated = true
                 self.isEmailVerified = user.isEmailVerified
-                // Fetch the Firestore user document and ensure FriendsViewModel is updated
                 self.fetchUserDocument(uid: user.uid)
             } else {
-                // This will cover: signOut, account deletion (even from another device), and token expiry
                 self.isAuthenticated = false
                 self.isEmailVerified = false
                 self.user = nil
-                // Clear friends VM
                 FriendsViewModel.shared.currentUser = nil
                 DispatchQueue.main.async {
                     FriendsViewModel.shared.friends = []
@@ -44,13 +41,17 @@ class AuthService: ObservableObject {
     }
 
     // MARK: - Email Auth
-    func signUpWithEmail(email: String, password: String, name: String, avatar: String) {
+
+    /// Improved signup: disables subsequent login until Firestore profile is created.
+    func signUpWithEmail(email: String, password: String, name: String, avatar: String, onProfileCreated: (() -> Void)? = nil) {
+        isCreatingUserProfile = true
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
                 print("Signup error: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isAuthenticated = false
                     self.isEmailVerified = false
+                    self.isCreatingUserProfile = false
                 }
                 return
             }
@@ -58,23 +59,26 @@ class AuthService: ObservableObject {
                 DispatchQueue.main.async {
                     self.isAuthenticated = false
                     self.isEmailVerified = false
+                    self.isCreatingUserProfile = false
                 }
                 print("Signup: no firebase user returned")
                 return
             }
 
-            // Create Firestore user document and set FriendsViewModel current user in the completion
+            // Create Firestore profile, then only allow next step!
             self.createUserDocument(for: firebaseUser, name: name, avatar: avatar) { created in
+                DispatchQueue.main.async {
+                    self.isCreatingUserProfile = false
+                }
                 if created {
-                    // fetch the user doc to populate local state
                     self.fetchUserDocument(uid: firebaseUser.uid)
+                    onProfileCreated?()
                 } else {
                     print("Warning: user document creation failed or returned false")
                     self.fetchUserDocument(uid: firebaseUser.uid)
                 }
             }
 
-            // Send verification (non-blocking)
             firebaseUser.sendEmailVerification { error in
                 if let error = error {
                     print("Failed to send verification: \(error.localizedDescription)")
@@ -90,7 +94,12 @@ class AuthService: ObservableObject {
         }
     }
 
-    func signInWithEmail(email: String, password: String) {
+    func signInWithEmail(email: String, password: String, onLoginProgress: ((String?) -> Void)? = nil) {
+        // Block login if Firestore profile is still being created
+        if isCreatingUserProfile {
+            onLoginProgress?("Account setup in progress, please wait…")
+            return
+        }
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
             if let error = error {
                 print("Sign in error: \(error.localizedDescription)")
@@ -98,6 +107,7 @@ class AuthService: ObservableObject {
                     self.isAuthenticated = false
                     self.isEmailVerified = false
                 }
+                onLoginProgress?(error.localizedDescription)
                 return
             }
             guard let firebaseUser = result?.user else {
@@ -106,6 +116,7 @@ class AuthService: ObservableObject {
                     self.isAuthenticated = false
                     self.isEmailVerified = false
                 }
+                onLoginProgress?("No user returned.")
                 return
             }
 
@@ -114,8 +125,52 @@ class AuthService: ObservableObject {
                 self.isEmailVerified = firebaseUser.isEmailVerified
             }
 
-            // Fetch user doc and ensure FriendsViewModel.currentUser is set
-            self.fetchUserDocument(uid: firebaseUser.uid)
+            // Try for up to 2 seconds for Firestore doc to be ready
+            self.tryFetchUserDocumentWithRetry(uid: firebaseUser.uid, attempts: 5, delay: 0.4, onLoginProgress: onLoginProgress)
+        }
+    }
+
+    // Retry logic for new accounts (Firestore user doc async creation delay)
+    private func tryFetchUserDocumentWithRetry(uid: String, attempts: Int, delay: TimeInterval, onLoginProgress: ((String?) -> Void)?) {
+        guard attempts > 0 else {
+            onLoginProgress?("Account setup in progress. Please try again in a few seconds.")
+            DispatchQueue.main.async {
+                self.user = nil
+                self.isAuthenticated = false
+                FriendsViewModel.shared.currentUser = nil
+                FriendsViewModel.shared.friends = []
+            }
+            return
+        }
+        db.collection("users").document(uid).getDocument { snapshot, error in
+            if let error = error {
+                print("Firestore fetch error: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.user = nil
+                    self.isAuthenticated = false
+                    FriendsViewModel.shared.currentUser = nil
+                    FriendsViewModel.shared.friends = []
+                }
+                onLoginProgress?(error.localizedDescription)
+                return
+            }
+            guard let data = snapshot?.data() else {
+                // Retry if missing
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    self.tryFetchUserDocumentWithRetry(uid: uid, attempts: attempts - 1, delay: delay, onLoginProgress: onLoginProgress)
+                }
+                return
+            }
+            let decoded = self.decodeUserProfile(from: data)
+            DispatchQueue.main.async {
+                self.user = decoded
+                self.isAuthenticated = true
+                self.isEmailVerified = decoded.emailVerified
+                let minimal = User(id: decoded.uid, name: decoded.name, email: decoded.email)
+                FriendsViewModel.shared.currentUser = minimal
+                FriendsViewModel.shared.fetchFriends()
+                onLoginProgress?(nil)
+            }
         }
     }
 
@@ -131,10 +186,10 @@ class AuthService: ObservableObject {
 
     // MARK: - Apple/Google Auth (pseudo-code, fill in as needed)
     func signInWithApple() {
-        // Use AuthenticationServices + FirebaseAuth
+        // Implement with AuthenticationServices + FirebaseAuth
     }
     func signInWithGoogle() {
-        // Use GoogleSignIn + FirebaseAuth
+        // Implement with GoogleSignIn + FirebaseAuth
     }
 
     func signOut() {
@@ -143,11 +198,9 @@ class AuthService: ObservableObject {
         } catch {
             print("signOut error: \(error)")
         }
-        // Clear local state
         self.user = nil
         self.isAuthenticated = false
         self.isEmailVerified = false
-        // Clear FriendsViewModel
         FriendsViewModel.shared.currentUser = nil
         DispatchQueue.main.async {
             FriendsViewModel.shared.friends = []
@@ -155,7 +208,6 @@ class AuthService: ObservableObject {
     }
 
     func deleteAccount() {
-        // Re-authenticate, delete user from Auth and Firestore, or mark as deleted
         guard let firebaseUser = Auth.auth().currentUser else { return }
         firebaseUser.delete { error in
             if let error = error {
@@ -174,9 +226,6 @@ class AuthService: ObservableObject {
     }
 
     // MARK: - Firestore User CRUD
-
-    /// Create or overwrite a user document for the given FirebaseAuth user.
-    /// Calls completion(true) on successful write (or when write returns no error).
     private func createUserDocument(for authUser: FirebaseAuth.User, name: String, avatar: String, completion: ((Bool) -> Void)? = nil) {
         let uid = authUser.uid
         let userDoc: [String: Any] = [
@@ -200,7 +249,6 @@ class AuthService: ObservableObject {
                 completion?(false)
                 return
             }
-            // Ensure FriendsViewModel has the current user after create
             let userObj = User(id: uid, name: name, email: authUser.email)
             DispatchQueue.main.async {
                 FriendsViewModel.shared.currentUser = userObj
@@ -210,7 +258,6 @@ class AuthService: ObservableObject {
     }
 
     /// Fetch Firestore user document and populate local `user` (UserProfile).
-    /// Also sets FriendsViewModel.shared.currentUser to a minimal `User`.
     func fetchUserDocument(uid: String) {
         db.collection("users").document(uid).getDocument { snapshot, error in
             if let error = error {
@@ -218,7 +265,6 @@ class AuthService: ObservableObject {
                 DispatchQueue.main.async {
                     self.user = nil
                     self.isAuthenticated = false
-                    // Clear friends VM just in case
                     FriendsViewModel.shared.currentUser = nil
                     FriendsViewModel.shared.friends = []
                 }
@@ -240,10 +286,8 @@ class AuthService: ObservableObject {
                 self.user = decoded
                 self.isAuthenticated = true
                 self.isEmailVerified = decoded.emailVerified
-                // Mirror a lightweight User model into FriendsViewModel for friend operations
                 let minimal = User(id: decoded.uid, name: decoded.name, email: decoded.email)
                 FriendsViewModel.shared.currentUser = minimal
-                // Optionally refresh friends list immediately
                 FriendsViewModel.shared.fetchFriends()
             }
         }
@@ -287,11 +331,9 @@ class AuthService: ObservableObject {
     // MARK: - Set user from FirebaseAuth.User (for persistent login on relaunch)
     func setUser(from firebaseUser: FirebaseAuth.User) {
         let uid = firebaseUser.uid
-        // If already have the user profile in memory, skip fetch
         if let currentUser = self.user, currentUser.uid == uid {
             self.isAuthenticated = true
             self.isEmailVerified = firebaseUser.isEmailVerified
-            // Also ensure friends VM is set
             FriendsViewModel.shared.currentUser = User(id: uid, name: currentUser.name, email: currentUser.email)
             return
         }

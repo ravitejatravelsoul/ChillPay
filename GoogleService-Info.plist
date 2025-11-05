@@ -2,29 +2,33 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>650142859078-31al2qkb4u1063tq63obtv2esvmkp0n8.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.650142859078-31al2qkb4u1063tq63obtv2esvmkp0n8</string>
 	<key>API_KEY</key>
-	<string>AIzaSyA4BFfqfgAHNHbpPkA5duaAM0T4K3jqWdo</string>
+	<string>AIzaSyBD09qz8Ssjil7A7OMEictppIAvTCdQtJM</string>
 	<key>GCM_SENDER_ID</key>
-	<string>697945236181</string>
+	<string>650142859078</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.Raviteja.chillpay</string>
+	<string>com.chillpay.chillpay</string>
 	<key>PROJECT_ID</key>
-	<string>chillpay-f2598</string>
+	<string>chillpay-358ad</string>
 	<key>STORAGE_BUCKET</key>
-	<string>chillpay-f2598.firebasestorage.app</string>
+	<string>chillpay-358ad.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_GCM_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:697945236181:ios:45825d5d84a8b88168f85c</string>
+	<string>1:650142859078:ios:cce5926f9d74559f7e2f47</string>
 </dict>
 </plist>

@@ -10,7 +10,6 @@ struct SignupView: View {
     var onSignupSuccess: () -> Void
     var onBack: () -> Void
 
-    // Keyboard adaptive state
     @State private var keyboardHeight: CGFloat = 0
 
     var body: some View {
@@ -47,21 +46,34 @@ struct SignupView: View {
                             errorMessage = "Please fill all fields and pick an avatar."
                             return
                         }
-                        authService.signUpWithEmail(email: email, password: password, name: name, avatar: avatar)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            onSignupSuccess()
-                        }
+                        errorMessage = nil
+                        authService.signUpWithEmail(
+                            email: email,
+                            password: password,
+                            name: name,
+                            avatar: avatar,
+                            onProfileCreated: {
+                                onSignupSuccess()
+                            }
+                        )
                     }) {
-                        Text("Sign Up")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background((selectedAvatar != nil && !name.isEmpty && !email.isEmpty && !password.isEmpty) ? ChillTheme.accent : Color.gray.opacity(0.5))
-                            .foregroundColor(.white)
-                            .cornerRadius(14)
+                        if authService.isCreatingUserProfile {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: ChillTheme.accent))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else {
+                            Text("Sign Up")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
                     }
+                    .background((selectedAvatar != nil && !name.isEmpty && !email.isEmpty && !password.isEmpty) ? ChillTheme.accent : Color.gray.opacity(0.5))
+                    .foregroundColor(.white)
+                    .cornerRadius(14)
                     .padding(.horizontal, 24)
-                    .disabled(selectedAvatar == nil || name.isEmpty || email.isEmpty || password.isEmpty)
+                    .disabled(selectedAvatar == nil || name.isEmpty || email.isEmpty || password.isEmpty || authService.isCreatingUserProfile) // Block button during profile creation
 
                     Button("Back to Login") { onBack() }
                         .foregroundColor(.green)
@@ -71,15 +83,9 @@ struct SignupView: View {
                 .padding(.bottom, keyboardHeight)
                 .frame(maxWidth: .infinity)
             }
-            .onTapGesture {
-                hideKeyboard()
-            }
-            .onAppear {
-                subscribeToKeyboardNotifications()
-            }
-            .onDisappear {
-                unsubscribeFromKeyboardNotifications()
-            }
+            .onTapGesture { hideKeyboard() }
+            .onAppear { subscribeToKeyboardNotifications() }
+            .onDisappear { unsubscribeFromKeyboardNotifications() }
         }
         .preferredColorScheme(.dark)
     }
@@ -96,9 +102,7 @@ struct SignupView: View {
             }
         }
         NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
-            withAnimation {
-                keyboardHeight = 0
-            }
+            withAnimation { keyboardHeight = 0 }
         }
     }
     private func unsubscribeFromKeyboardNotifications() {

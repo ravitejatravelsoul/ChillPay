@@ -13,6 +13,16 @@ class ExpenseViewModel: ObservableObject {
         let symbol = group.currency.symbol
         let amt = String(format: "%.2f", expense.amount)
         groupVM.logActivity(for: group.id, text: "Added expense \(expense.title) for \(symbol)\(amt)")
+        // Push notification to all group members except current user
+        if let me = groupVM.friendsVM?.currentUser {
+            for member in groupVM.groups[index].members where member.id != me.id {
+                NotificationManager.shared.sendPushNotification(
+                    to: member,
+                    title: "Group Expense Added",
+                    body: "\(me.name) added \"\(expense.title)\" for \(symbol)\(amt) in \"\(group.name)\"."
+                )
+            }
+        }
     }
 
     func updateExpense(_ expense: Expense, in group: Group) {
@@ -22,6 +32,16 @@ class ExpenseViewModel: ObservableObject {
             let symbol = group.currency.symbol
             let amt = String(format: "%.2f", expense.amount)
             groupVM.logActivity(for: group.id, text: "Updated expense \(expense.title) to \(symbol)\(amt)")
+            // Push notification to all group members except current user
+            if let me = groupVM.friendsVM?.currentUser {
+                for member in groupVM.groups[groupIndex].members where member.id != me.id {
+                    NotificationManager.shared.sendPushNotification(
+                        to: member,
+                        title: "Group Expense Edited",
+                        body: "\(me.name) edited \"\(expense.title)\" for \(symbol)\(amt) in \"\(group.name)\"."
+                    )
+                }
+            }
         }
     }
 
@@ -32,8 +52,18 @@ class ExpenseViewModel: ObservableObject {
             return groupVM.groups[groupIndex].expenses[offset].title
         }
         groupVM.groups[groupIndex].expenses.remove(atOffsets: offsets)
-        for title in titles {
-            groupVM.logActivity(for: group.id, text: "Deleted expense \(title)")
+        // Push notification to all group members except current user for each deleted expense
+        if let me = groupVM.friendsVM?.currentUser {
+            for title in titles {
+                groupVM.logActivity(for: group.id, text: "Deleted expense \(title)")
+                for member in groupVM.groups[groupIndex].members where member.id != me.id {
+                    NotificationManager.shared.sendPushNotification(
+                        to: member,
+                        title: "Group Expense Deleted",
+                        body: "\(me.name) deleted \"\(title)\" in \"\(group.name)\"."
+                    )
+                }
+            }
         }
     }
 
@@ -145,6 +175,16 @@ class ExpenseViewModel: ObservableObject {
             description = "\(from.name) forgave \(to.name) \(currencySymbol)\(formattedAmount)"
         }
         groupVM.logActivity(for: group.id, text: description)
+        // Push notification to all group members except current user
+        if let me = groupVM.friendsVM?.currentUser {
+            for member in groupVM.groups[index].members where member.id != me.id {
+                NotificationManager.shared.sendPushNotification(
+                    to: member,
+                    title: "Adjustment Recorded",
+                    body: description + " in \"\(group.name)\"."
+                )
+            }
+        }
     }
 
     func addComment(_ text: String, by author: User, to expense: Expense, in group: Group) {
@@ -158,6 +198,16 @@ class ExpenseViewModel: ObservableObject {
                 groupVM.groups[groupIndex].expenses[idx] = updatedExpense
             }
             groupVM.logActivity(for: group.id, text: "\(author.name) commented on \(expense.title)")
+            // Push notification to all group members except current user
+            if let me = groupVM.friendsVM?.currentUser {
+                for member in groupVM.groups[groupIndex].members where member.id != me.id {
+                    NotificationManager.shared.sendPushNotification(
+                        to: member,
+                        title: "Comment Added",
+                        body: "\(author.name) commented on \"\(expense.title)\" in \"\(group.name)\"."
+                    )
+                }
+            }
         }
     }
 
@@ -167,6 +217,16 @@ class ExpenseViewModel: ObservableObject {
             // Uncomment next if your Expense struct includes isSettled:
             // groupVM.groups[groupIndex].expenses[expenseIndex].isSettled = true
             groupVM.logActivity(for: group.id, text: "Settled expense '\(expense.title)'")
+            // Push notification to all group members except current user
+            if let me = groupVM.friendsVM?.currentUser {
+                for member in groupVM.groups[groupIndex].members where member.id != me.id {
+                    NotificationManager.shared.sendPushNotification(
+                        to: member,
+                        title: "Expense Settled",
+                        body: "\(me.name) settled \"\(expense.title)\" in \"\(group.name)\"."
+                    )
+                }
+            }
         }
     }
 }

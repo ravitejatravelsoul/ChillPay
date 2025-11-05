@@ -1,9 +1,3 @@
-//
-//  ChillPayTests.swift
-//  ChillPayTests
-//
-//  Created by Raviteja on 9/12/25.
-//
 
 import Testing
 

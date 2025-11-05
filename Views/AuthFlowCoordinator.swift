@@ -9,7 +9,8 @@ struct AuthFlowCoordinator: View {
     @State private var flowScreen: AuthFlowScreen = .onboarding
     @ObservedObject var authService = AuthService.shared
     @State private var globalMessage: String? = nil
-
+    @State private var isFromSignup: Bool = false // Track if coming from signup
+    
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
@@ -27,7 +28,7 @@ struct AuthFlowCoordinator: View {
                 Spacer(minLength: 0)
             }
             .zIndex(2)
-
+            
             switch flowScreen {
             case .onboarding:
                 OnboardingView {
@@ -38,12 +39,9 @@ struct AuthFlowCoordinator: View {
                     onSignup: { flowScreen = .signup },
                     onLoginSuccess: {
                         setCurrentUserFromProfile()
-                        if AuthService.shared.isEmailVerified {
-                            flowScreen = .mainApp
-                        } else {
-                            globalMessage = nil
-                            flowScreen = .emailVerification
-                        }
+                        // On login, skip verify screen, go directly to dashboard
+                        flowScreen = .mainApp
+                        isFromSignup = false
                     },
                     onLoginError: { error in
                         globalMessage = error
@@ -54,7 +52,10 @@ struct AuthFlowCoordinator: View {
                 )
             case .signup:
                 SignupView(
-                    onSignupSuccess: { flowScreen = .emailVerification },
+                    onSignupSuccess: {
+                        isFromSignup = true
+                        flowScreen = .emailVerification
+                    },
                     onBack: { flowScreen = .login }
                 )
             case .emailVerification:
@@ -66,30 +67,38 @@ struct AuthFlowCoordinator: View {
                 ContentView()
             }
         }
-        .onAppear {
-            // --- Persistent login fix ---
-            if let currentUser = Auth.auth().currentUser {
-                AuthService.shared.setUser(from: currentUser)
-                setCurrentUserFromProfile()
-                if AuthService.shared.isEmailVerified {
-                    flowScreen = .mainApp
-                } else {
-                    flowScreen = .emailVerification
-                }
-            } else {
-                flowScreen = .login
-            }
-        }
-        .onChange(of: authService.isAuthenticated) {
-            if !authService.isAuthenticated {
-                flowScreen = .login
-            }
+        .onAppear { restoreSessionIfPossible() }
+        .onChange(of: authService.isAuthenticated) { _ in syncFlowOnAuthChange() }
+        .onChange(of: authService.user) { _ in syncFlowOnAuthChange() }
+    }
+
+    private func restoreSessionIfPossible() {
+        if let currentUser = Auth.auth().currentUser {
+            authService.setUser(from: currentUser)
+            setCurrentUserFromProfile()
+            flowScreen = .mainApp // On restore, always go to dashboard (never verify email here)
+            isFromSignup = false
+        } else {
+            flowScreen = .login
         }
     }
 
-    // Helper to always set currentUser using the existing User object from friends
+    private func syncFlowOnAuthChange() {
+        // Only on first signup, show verify email. All other times, go to dashboard.
+        if authService.isAuthenticated, authService.user != nil {
+            setCurrentUserFromProfile()
+            if isFromSignup {
+                flowScreen = .emailVerification
+            } else {
+                flowScreen = .mainApp
+            }
+        } else {
+            flowScreen = .login
+        }
+    }
+
     private func setCurrentUserFromProfile() {
-        if let userProfile = AuthService.shared.user {
+        if let userProfile = authService.user {
             let myUid = userProfile.uid
             if let existing = FriendsViewModel.shared.friends.first(where: { $0.id == myUid }) {
                 FriendsViewModel.shared.currentUser = existing

@@ -229,10 +229,8 @@ struct ExpenseDetailView: View {
 
     private func scheduleReminder() {
         NotificationManager.shared.requestAuthorizationIfNeeded()
-        let title = "Expense Reminder: \(currentExpense.title)"
-        let amountString = String(format: "%.2f", currentExpense.amount)
-        let body = "Don't forget about \(currentExpense.title) for \(group.currency.symbol)\(amountString)."
-        NotificationManager.shared.scheduleNotification(title: title, body: body, date: reminderDate)
+        // Only schedule a local notification for monthly outstanding reminder
+        NotificationManager.shared.scheduleMonthlyOutstandingReminder()
         showDatePicker = false
     }
 

@@ -1,11 +1,9 @@
 import SwiftUI
-import FirebaseCore
 
 @main
 struct ChillPayApp: App {
-    init() {
-        FirebaseApp.configure()
-    }
+    // Attach your custom AppDelegate for notifications and Firebase Messaging
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
         WindowGroup {

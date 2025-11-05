@@ -20,6 +20,7 @@
 		3A11D7232E740163004949B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70C2E73FE26004949B6 /* Expense.swift */; };
 		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
 		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
+		3A3F48C92EB8678D002CA611 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */; };
 		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
 		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
 		3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD92E8849570093D65A /* GroupsView.swift */; };
@@ -42,7 +43,6 @@
 		3A80FCFC2E8B4DD10093D65A /* GlobalSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFB2E8B4DD10093D65A /* GlobalSettingsSheet.swift */; };
 		3A80FCFE2E8B5B7C0093D65A /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFD2E8B5B7C0093D65A /* CustomTabBar.swift */; };
 		3A80FD002E8B87800093D65A /* UIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCFF2E8B87800093D65A /* UIHelpers.swift */; };
-		3A80FD022E8CD2EC0093D65A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A80FD012E8CD2EC0093D65A /* GoogleService-Info.plist */; };
 		3A80FD052E8CE2230093D65A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3A80FD042E8CE2230093D65A /* FirebaseAuth */; };
 		3A80FD072E8CE2230093D65A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3A80FD062E8CE2230093D65A /* FirebaseFirestore */; };
 		3A80FD092E8CE2230093D65A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 3A80FD082E8CE2230093D65A /* FirebaseMessaging */; };
@@ -107,6 +107,7 @@
 		3A11D7162E73FEEC004949B6 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		3A80FCD92E8849570093D65A /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
@@ -129,7 +130,6 @@
 		3A80FCFB2E8B4DD10093D65A /* GlobalSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSettingsSheet.swift; sourceTree = "<group>"; };
 		3A80FCFD2E8B5B7C0093D65A /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		3A80FCFF2E8B87800093D65A /* UIHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIHelpers.swift; sourceTree = "<group>"; };
-		3A80FD012E8CD2EC0093D65A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FD0A2E8CE2340093D65A /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		3A80FD0C2E8CE2830093D65A /* EmojiAvatarPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiAvatarPicker.swift; sourceTree = "<group>"; };
 		3A80FD0E2E8CE2990093D65A /* ProfileSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSetupView.swift; sourceTree = "<group>"; };
@@ -157,9 +157,22 @@
 		3AD5E5852E7E6A1500FAE979 /* ExpenseCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCategory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3A2C71BF2EB79696009F3225 /* Exceptions for "ChillPay" folder in "ChillPay" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3A11D6DA2E73FD16004949B6 /* ChillPay */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3A11D6DD2E73FD16004949B6 /* ChillPay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3A2C71BF2EB79696009F3225 /* Exceptions for "ChillPay" folder in "ChillPay" target */,
+			);
 			path = ChillPay;
 			sourceTree = "<group>";
 		};
@@ -206,8 +219,8 @@
 		3A11D6D22E73FD16004949B6 = {
 			isa = PBXGroup;
 			children = (
+				3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */,
 				3A80FD2B2E99F7410093D65A /* AppDelegate.swift */,
-				3A80FD012E8CD2EC0093D65A /* GoogleService-Info.plist */,
 				3A80FCEF2E8999560093D65A /* ChillTheme.swift */,
 				3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */,
 				3A11D70A2E73FDB1004949B6 /* Services */,
@@ -450,7 +463,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3A80FD022E8CD2EC0093D65A /* GoogleService-Info.plist in Resources */,
+				3A3F48C92EB8678D002CA611 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -696,6 +709,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChillPay/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -711,7 +725,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Raviteja.chillpay;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPay;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -735,6 +749,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChillPay/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -750,7 +765,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Raviteja.chillpay;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChillPay.ChillPay;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;

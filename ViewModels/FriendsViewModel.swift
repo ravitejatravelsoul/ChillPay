@@ -266,6 +266,15 @@ final class FriendsViewModel: ObservableObject {
             message: note ?? "Settled via \(method.rawValue.capitalized)!"
         )
         objectWillChange.send()
+
+        // Push notification to friend for expense clear/settle up
+        if let me = currentUser {
+            NotificationManager.shared.sendPushNotification(
+                to: friend,
+                title: "Expenses Cleared",
+                body: "\(me.name) settled up with you!"
+            )
+        }
     }
 
     func isSettledWith(friend: User) -> Bool {
@@ -365,6 +374,15 @@ final class FriendsViewModel: ObservableObject {
         saveDirectExpensesToFirestore()
         refreshFriends()
         objectWillChange.send()
+
+        // Push notification to friend on expense add
+        if let me = currentUser {
+            NotificationManager.shared.sendPushNotification(
+                to: friend,
+                title: "Expense Added",
+                body: "\(me.name) added \"\(description)\" for ₹\(amount) with you."
+            )
+        }
     }
 
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
@@ -382,6 +400,15 @@ final class FriendsViewModel: ObservableObject {
             saveDirectExpensesToFirestore()
             refreshFriends()
             objectWillChange.send()
+
+            // Push notification to friend on expense edit
+            if let me = currentUser {
+                NotificationManager.shared.sendPushNotification(
+                    to: friend,
+                    title: "Expense Edited",
+                    body: "\(me.name) edited \"\(description)\" for ₹\(amount) with you."
+                )
+            }
         }
     }
 
