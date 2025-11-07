@@ -68,8 +68,8 @@ struct AuthFlowCoordinator: View {
             }
         }
         .onAppear { restoreSessionIfPossible() }
-        .onChange(of: authService.isAuthenticated) { _ in syncFlowOnAuthChange() }
-        .onChange(of: authService.user) { _ in syncFlowOnAuthChange() }
+        .onChange(of: authService.isAuthenticated) { _,_ in syncFlowOnAuthChange() }
+        .onChange(of: authService.user) { _,_ in syncFlowOnAuthChange() }
     }
 
     private func restoreSessionIfPossible() {

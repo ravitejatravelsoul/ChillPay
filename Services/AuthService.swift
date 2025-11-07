@@ -10,12 +10,9 @@ class AuthService: ObservableObject {
 
     private let db = Firestore.firestore()
     private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
-    
-    // Track if user account/profile creation is still pending
     @Published var isCreatingUserProfile = false
 
     init() {
-        // Listen for auth state changes (logout, user deleted, etc)
         authStateListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] auth, user in
             guard let self = self else { return }
             if let user = user {
@@ -41,9 +38,17 @@ class AuthService: ObservableObject {
     }
 
     // MARK: - Email Auth
-
-    /// Improved signup: disables subsequent login until Firestore profile is created.
-    func signUpWithEmail(email: String, password: String, name: String, avatar: String, onProfileCreated: (() -> Void)? = nil) {
+    func signUpWithEmail(
+        email: String,
+        password: String,
+        name: String,
+        avatar: String,
+        bio: String? = nil,
+        phone: String? = nil,
+        notificationsEnabled: Bool = true,
+        faceIDEnabled: Bool = false,
+        onProfileCreated: (() -> Void)? = nil
+    ) {
         isCreatingUserProfile = true
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
@@ -64,9 +69,15 @@ class AuthService: ObservableObject {
                 print("Signup: no firebase user returned")
                 return
             }
-
-            // Create Firestore profile, then only allow next step!
-            self.createUserDocument(for: firebaseUser, name: name, avatar: avatar) { created in
+            self.createUserDocument(
+                for: firebaseUser,
+                name: name,
+                avatar: avatar,
+                bio: bio,
+                phone: phone,
+                notificationsEnabled: notificationsEnabled,
+                faceIDEnabled: faceIDEnabled
+            ) { created in
                 DispatchQueue.main.async {
                     self.isCreatingUserProfile = false
                 }
@@ -78,7 +89,6 @@ class AuthService: ObservableObject {
                     self.fetchUserDocument(uid: firebaseUser.uid)
                 }
             }
-
             firebaseUser.sendEmailVerification { error in
                 if let error = error {
                     print("Failed to send verification: \(error.localizedDescription)")
@@ -86,7 +96,6 @@ class AuthService: ObservableObject {
                     print("Verification email sent!")
                 }
             }
-
             DispatchQueue.main.async {
                 self.isAuthenticated = true
                 self.isEmailVerified = firebaseUser.isEmailVerified
@@ -95,7 +104,6 @@ class AuthService: ObservableObject {
     }
 
     func signInWithEmail(email: String, password: String, onLoginProgress: ((String?) -> Void)? = nil) {
-        // Block login if Firestore profile is still being created
         if isCreatingUserProfile {
             onLoginProgress?("Account setup in progress, please wait…")
             return
@@ -119,18 +127,14 @@ class AuthService: ObservableObject {
                 onLoginProgress?("No user returned.")
                 return
             }
-
             DispatchQueue.main.async {
                 self.isAuthenticated = true
                 self.isEmailVerified = firebaseUser.isEmailVerified
             }
-
-            // Try for up to 2 seconds for Firestore doc to be ready
             self.tryFetchUserDocumentWithRetry(uid: firebaseUser.uid, attempts: 5, delay: 0.4, onLoginProgress: onLoginProgress)
         }
     }
 
-    // Retry logic for new accounts (Firestore user doc async creation delay)
     private func tryFetchUserDocumentWithRetry(uid: String, attempts: Int, delay: TimeInterval, onLoginProgress: ((String?) -> Void)?) {
         guard attempts > 0 else {
             onLoginProgress?("Account setup in progress. Please try again in a few seconds.")
@@ -155,7 +159,6 @@ class AuthService: ObservableObject {
                 return
             }
             guard let data = snapshot?.data() else {
-                // Retry if missing
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     self.tryFetchUserDocumentWithRetry(uid: uid, attempts: attempts - 1, delay: delay, onLoginProgress: onLoginProgress)
                 }
@@ -184,13 +187,8 @@ class AuthService: ObservableObject {
         }
     }
 
-    // MARK: - Apple/Google Auth (pseudo-code, fill in as needed)
-    func signInWithApple() {
-        // Implement with AuthenticationServices + FirebaseAuth
-    }
-    func signInWithGoogle() {
-        // Implement with GoogleSignIn + FirebaseAuth
-    }
+    func signInWithApple() {}
+    func signInWithGoogle() {}
 
     func signOut() {
         do {
@@ -225,8 +223,16 @@ class AuthService: ObservableObject {
         }
     }
 
-    // MARK: - Firestore User CRUD
-    private func createUserDocument(for authUser: FirebaseAuth.User, name: String, avatar: String, completion: ((Bool) -> Void)? = nil) {
+    private func createUserDocument(
+        for authUser: FirebaseAuth.User,
+        name: String,
+        avatar: String,
+        bio: String? = nil,
+        phone: String? = nil,
+        notificationsEnabled: Bool = true,
+        faceIDEnabled: Bool = false,
+        completion: ((Bool) -> Void)? = nil
+    ) {
         let uid = authUser.uid
         let userDoc: [String: Any] = [
             "uid": uid,
@@ -235,6 +241,10 @@ class AuthService: ObservableObject {
             "providers": authUser.providerData.map { $0.providerID },
             "emailVerified": authUser.isEmailVerified,
             "avatar": avatar,
+            "bio": bio ?? "",
+            "phone": phone ?? "",
+            "notificationsEnabled": notificationsEnabled,
+            "faceIDEnabled": faceIDEnabled,
             "createdAt": FieldValue.serverTimestamp(),
             "lastLoginAt": FieldValue.serverTimestamp(),
             "groups": [],
@@ -257,7 +267,6 @@ class AuthService: ObservableObject {
         }
     }
 
-    /// Fetch Firestore user document and populate local `user` (UserProfile).
     func fetchUserDocument(uid: String) {
         db.collection("users").document(uid).getDocument { snapshot, error in
             if let error = error {
@@ -280,7 +289,6 @@ class AuthService: ObservableObject {
                 }
                 return
             }
-
             let decoded = self.decodeUserProfile(from: data)
             DispatchQueue.main.async {
                 self.user = decoded
@@ -306,7 +314,57 @@ class AuthService: ObservableObject {
         }
     }
 
-    // MARK: - UserProfile Decoding
+    func updateProfile(name: String, phone: String, bio: String, avatar: String) {
+        guard let uid = user?.uid else { return }
+        db.collection("users").document(uid).updateData([
+            "name": name,
+            "phone": phone,
+            "bio": bio,
+            "avatar": avatar
+        ]) { err in
+            if let err = err {
+                print("updateProfile error: \(err.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    self.user?.name = name
+                    self.user?.phone = phone
+                    self.user?.bio = bio
+                    self.user?.avatar = avatar
+                }
+            }
+        }
+    }
+
+    func updateNotificationsEnabled(_ enabled: Bool) {
+        guard let uid = user?.uid else { return }
+        db.collection("users").document(uid).updateData([
+            "notificationsEnabled": enabled
+        ]) { err in
+            if let err = err {
+                print("updateNotificationsEnabled error: \(err.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    self.user?.notificationsEnabled = enabled
+                }
+            }
+        }
+    }
+
+    func updateFaceIDEnabled(_ enabled: Bool) {
+        guard let uid = user?.uid else { return }
+        db.collection("users").document(uid).updateData([
+            "faceIDEnabled": enabled
+        ]) { err in
+            if let err = err {
+                print("updateFaceIDEnabled error: \(err.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    self.user?.faceIDEnabled = enabled
+                }
+            }
+        }
+    }
+
     private func decodeUserProfile(from data: [String: Any]) -> UserProfile {
         return UserProfile(
             uid: data["uid"] as? String ?? "",
@@ -318,6 +376,9 @@ class AuthService: ObservableObject {
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             lastLoginAt: (data["lastLoginAt"] as? Timestamp)?.dateValue() ?? Date(),
             bio: data["bio"] as? String,
+            phone: data["phone"] as? String,
+            notificationsEnabled: data["notificationsEnabled"] as? Bool ?? true,
+            faceIDEnabled: data["faceIDEnabled"] as? Bool ?? false,
             groups: data["groups"] as? [String] ?? [],
             friends: data["friends"] as? [String] ?? [],
             pushToken: data["pushToken"] as? String,
@@ -328,7 +389,6 @@ class AuthService: ObservableObject {
         )
     }
 
-    // MARK: - Set user from FirebaseAuth.User (for persistent login on relaunch)
     func setUser(from firebaseUser: FirebaseAuth.User) {
         let uid = firebaseUser.uid
         if let currentUser = self.user, currentUser.uid == uid {

@@ -2,8 +2,12 @@ import SwiftUI
 
 struct ProfileEditView: View {
     @ObservedObject var authService = AuthService.shared
+    // Load initial values from user, fallback if nil
     @State private var selectedAvatar: String? = AuthService.shared.user?.avatar
     @State private var name: String = AuthService.shared.user?.name ?? ""
+    @State private var phone: String = AuthService.shared.user?.phone ?? ""
+    @State private var bio: String = AuthService.shared.user?.bio ?? ""
+    @State private var errorMessage: String?
 
     var body: some View {
         ZStack {
@@ -18,10 +22,11 @@ struct ProfileEditView: View {
 
                 VStack(spacing: 18) {
                     ChillTextField(title: "Name", text: $name)
+                    ChillTextField(title: "Phone (optional)", text: $phone)
+                    ChillTextField(title: "Bio (optional)", text: $bio)
                     Text("Avatar")
                         .font(.headline)
                         .foregroundColor(.white.opacity(0.85))
-
                     EmojiAvatarPicker(selectedAvatar: $selectedAvatar)
                         .padding(.horizontal, 4)
                 }
@@ -30,17 +35,29 @@ struct ProfileEditView: View {
                 .cornerRadius(20)
                 .padding(.horizontal, 18)
 
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
+
                 Button(action: {
-                    if let emoji = selectedAvatar {
-                        authService.updateAvatar(emoji: emoji)
+                    if let emoji = selectedAvatar, !name.isEmpty {
+                        authService.updateProfile(
+                            name: name,
+                            phone: phone,
+                            bio: bio,
+                            avatar: emoji
+                        )
+                    } else {
+                        errorMessage = "Please fill all required fields and pick an avatar."
                     }
-                    // You may want to update the name as well in your AuthService
                 }) {
                     Text("Save Changes")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(selectedAvatar != nil ? ChillTheme.accent : Color.gray.opacity(0.5))
+                        .background(selectedAvatar != nil && !name.isEmpty ? ChillTheme.accent : Color.gray.opacity(0.5))
                         .foregroundColor(.white)
                         .cornerRadius(14)
                 }

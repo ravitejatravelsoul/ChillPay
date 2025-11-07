@@ -89,7 +89,7 @@ struct GlobalAnalyticsView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
-                    .onChange(of: selectedRange) { _ in
+                    .onChange(of: selectedRange) { _, _ in
                         recomputeAnalytics()
                     }
 

@@ -5,6 +5,10 @@ struct SignupView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var name = ""
+    @State private var phone = ""                // NEW
+    @State private var bio = ""                  // NEW
+    @State private var notificationsEnabled = true     // NEW
+    @State private var faceIDEnabled = false           // NEW
     @State private var selectedAvatar: String? = nil
     @State private var errorMessage: String?
     var onSignupSuccess: () -> Void
@@ -25,7 +29,13 @@ struct SignupView: View {
                     VStack(spacing: 14) {
                         ChillTextField(title: "Name", text: $name)
                         ChillTextField(title: "Email", text: $email)
+                        ChillTextField(title: "Phone (optional)", text: $phone)
+                        ChillTextField(title: "Bio (optional)", text: $bio)
                         ChillTextField(title: "Password", text: $password, isSecure: true)
+                        Toggle("Enable notifications", isOn: $notificationsEnabled)
+                            .foregroundColor(.white)
+                        Toggle("Enable Face ID", isOn: $faceIDEnabled)
+                            .foregroundColor(.white)
                         if let errorMessage = errorMessage {
                             Text(errorMessage)
                                 .foregroundColor(.red)
@@ -42,8 +52,8 @@ struct SignupView: View {
                     .padding(.horizontal, 8)
 
                     Button(action: {
-                        guard let avatar = selectedAvatar, !name.isEmpty else {
-                            errorMessage = "Please fill all fields and pick an avatar."
+                        guard let avatar = selectedAvatar, !name.isEmpty, !email.isEmpty, !password.isEmpty else {
+                            errorMessage = "Please fill all required fields and pick an avatar."
                             return
                         }
                         errorMessage = nil
@@ -52,6 +62,10 @@ struct SignupView: View {
                             password: password,
                             name: name,
                             avatar: avatar,
+                            bio: bio,
+                            phone: phone,
+                            notificationsEnabled: notificationsEnabled,
+                            faceIDEnabled: faceIDEnabled,
                             onProfileCreated: {
                                 onSignupSuccess()
                             }

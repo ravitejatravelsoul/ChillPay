@@ -3,14 +3,17 @@ import Foundation
 struct UserProfile: Identifiable, Codable, Equatable {
     let id: String
     let uid: String
-    let name: String
+    var name: String                      // <--- make this 'var'
     let email: String
     let providers: [String]
     let emailVerified: Bool
-    var avatar: String?
+    var avatar: String?                   // <--- var
     let createdAt: Date
     let lastLoginAt: Date
-    let bio: String?
+    var bio: String?                      // <--- var
+    var phone: String?                    // <--- var
+    var notificationsEnabled: Bool        // <--- var
+    var faceIDEnabled: Bool               // <--- var
     let groups: [String]
     let friends: [String]
     let pushToken: String?
@@ -29,6 +32,9 @@ struct UserProfile: Identifiable, Codable, Equatable {
         createdAt: Date = Date(),
         lastLoginAt: Date = Date(),
         bio: String? = nil,
+        phone: String? = nil,
+        notificationsEnabled: Bool = true,
+        faceIDEnabled: Bool = false,
         groups: [String] = [],
         friends: [String] = [],
         pushToken: String? = nil,
@@ -47,6 +53,9 @@ struct UserProfile: Identifiable, Codable, Equatable {
         self.createdAt = createdAt
         self.lastLoginAt = lastLoginAt
         self.bio = bio
+        self.phone = phone
+        self.notificationsEnabled = notificationsEnabled
+        self.faceIDEnabled = faceIDEnabled
         self.groups = groups
         self.friends = friends
         self.pushToken = pushToken
