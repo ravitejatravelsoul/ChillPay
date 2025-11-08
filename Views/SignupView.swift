@@ -5,11 +5,15 @@ struct SignupView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var name = ""
-    @State private var phone = ""                // NEW
-    @State private var bio = ""                  // NEW
-    @State private var notificationsEnabled = true     // NEW
-    @State private var faceIDEnabled = false           // NEW
-    @State private var selectedAvatar: String? = nil
+    @State private var phone = ""
+    @State private var bio = ""
+    @State private var notificationsEnabled = true
+    @State private var faceIDEnabled = false
+
+    // DiceBear avatar fields
+    @State private var avatarSeed = "raviteja"
+    @State private var avatarStyle = "adventurer"
+
     @State private var errorMessage: String?
     var onSignupSuccess: () -> Void
     var onBack: () -> Void
@@ -47,12 +51,12 @@ struct SignupView: View {
                         Text("Pick Your Avatar")
                             .font(.headline)
                             .foregroundColor(.white.opacity(0.85))
-                        EmojiAvatarPicker(selectedAvatar: $selectedAvatar)
+                        AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                     }
                     .padding(.horizontal, 8)
 
                     Button(action: {
-                        guard let avatar = selectedAvatar, !name.isEmpty, !email.isEmpty, !password.isEmpty else {
+                        guard !name.isEmpty, !email.isEmpty, !password.isEmpty else {
                             errorMessage = "Please fill all required fields and pick an avatar."
                             return
                         }
@@ -61,11 +65,13 @@ struct SignupView: View {
                             email: email,
                             password: password,
                             name: name,
-                            avatar: avatar,
+                            avatar: "", // legacy emoji avatar (not used now)
                             bio: bio,
                             phone: phone,
                             notificationsEnabled: notificationsEnabled,
                             faceIDEnabled: faceIDEnabled,
+                            avatarSeed: avatarSeed,
+                            avatarStyle: avatarStyle,
                             onProfileCreated: {
                                 onSignupSuccess()
                             }
@@ -83,11 +89,11 @@ struct SignupView: View {
                                 .padding()
                         }
                     }
-                    .background((selectedAvatar != nil && !name.isEmpty && !email.isEmpty && !password.isEmpty) ? ChillTheme.accent : Color.gray.opacity(0.5))
+                    .background((!name.isEmpty && !email.isEmpty && !password.isEmpty) ? ChillTheme.accent : Color.gray.opacity(0.5))
                     .foregroundColor(.white)
                     .cornerRadius(14)
                     .padding(.horizontal, 24)
-                    .disabled(selectedAvatar == nil || name.isEmpty || email.isEmpty || password.isEmpty || authService.isCreatingUserProfile) // Block button during profile creation
+                    .disabled(name.isEmpty || email.isEmpty || password.isEmpty || authService.isCreatingUserProfile)
 
                     Button("Back to Login") { onBack() }
                         .foregroundColor(.green)

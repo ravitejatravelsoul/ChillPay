@@ -71,6 +71,8 @@
 		3AD5E5882E7E6A1500FAE979 /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5812E7E6A1500FAE979 /* Activity.swift */; };
 		3AD5E5892E7E6A1500FAE979 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5842E7E6A1500FAE979 /* Currency.swift */; };
 		3AD5E58A2E7E6A1500FAE979 /* Comment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5E5832E7E6A1500FAE979 /* Comment.swift */; };
+		3AE3D7962EBDA2E900F06448 /* AvatarPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE3D7952EBDA2E900F06448 /* AvatarPickerView.swift */; };
+		3AE3D7982EBEFFB100F06448 /* TabBarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -155,6 +157,8 @@
 		3AD5E5832E7E6A1500FAE979 /* Comment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comment.swift; sourceTree = "<group>"; };
 		3AD5E5842E7E6A1500FAE979 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		3AD5E5852E7E6A1500FAE979 /* ExpenseCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCategory.swift; sourceTree = "<group>"; };
+		3AE3D7952EBDA2E900F06448 /* AvatarPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarPickerView.swift; sourceTree = "<group>"; };
+		3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -264,6 +268,8 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */,
+				3AE3D7952EBDA2E900F06448 /* AvatarPickerView.swift */,
 				3A80FD3C2EAD2EBB0093D65A /* CelebrationPopup.swift */,
 				3A80FD3A2E9F307A0093D65A /* ParticipantsWrapView.swift */,
 				3A80FD1C2E8CE8CE0093D65A /* ChillTextField.swift */,
@@ -525,6 +531,7 @@
 				3A80FCE62E888DDE0093D65A /* AddFriendView.swift in Sources */,
 				3A80FCE42E886DF30093D65A /* GroupSummarySection.swift in Sources */,
 				3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */,
+				3AE3D7982EBEFFB100F06448 /* TabBarButton.swift in Sources */,
 				3A80FCDE2E8849860093D65A /* ProfileView.swift in Sources */,
 				3A80FD112E8CE2B40093D65A /* ProfileEditView.swift in Sources */,
 				3A80FCF02E8999560093D65A /* ChillTheme.swift in Sources */,
@@ -546,6 +553,7 @@
 				3AD5E5802E7E688400FAE979 /* NotificationManager.swift in Sources */,
 				3A11D7232E740163004949B6 /* Expense.swift in Sources */,
 				3A80FD1D2E8CE8CE0093D65A /* ChillTextField.swift in Sources */,
+				3AE3D7962EBDA2E900F06448 /* AvatarPickerView.swift in Sources */,
 				3A80FD2C2E99F7410093D65A /* AppDelegate.swift in Sources */,
 				3AD5E5762E7E67B200FAE979 /* ColorHelpers.swift in Sources */,
 			);

@@ -6,6 +6,7 @@ struct ContentView: View {
 
     @StateObject private var friendsVM = FriendsViewModel.shared
     @StateObject private var groupVM = GroupViewModel(friendsVM: FriendsViewModel.shared)
+    @ObservedObject private var authService = AuthService.shared
 
     // Main content as a computed property (with @ViewBuilder)
     @ViewBuilder
@@ -16,7 +17,6 @@ struct ContentView: View {
                 .environmentObject(groupVM)
                 .environmentObject(friendsVM)
                 .padding(.bottom, 72)
-
 
         case .friends:
             NavigationView {
@@ -50,7 +50,8 @@ struct ContentView: View {
             mainContent
             VStack {
                 Spacer()
-                CustomTabBar(selectedTab: $selectedTab, showAddSheet: $showAddSheet)
+                // Pass the user argument to CustomTabBar to fix the error!
+                CustomTabBar(selectedTab: $selectedTab, showAddSheet: $showAddSheet, user: authService.user)
             }
         }
         .edgesIgnoringSafeArea(.bottom)

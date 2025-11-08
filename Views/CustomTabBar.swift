@@ -1,12 +1,13 @@
 import SwiftUI
 
 enum MainTab: Int, CaseIterable {
-    case home, friends, groups, activity, profile // Changed from .settings to .profile
+    case home, friends, groups, activity, profile
 }
 
 struct CustomTabBar: View {
     @Binding var selectedTab: MainTab
-    @Binding var showAddSheet: Bool // You can remove this binding if not used elsewhere
+    @Binding var showAddSheet: Bool
+    let user: UserProfile?
 
     var body: some View {
         ZStack {
@@ -21,11 +22,12 @@ struct CustomTabBar: View {
                 .padding(.horizontal, 0)
 
             HStack(spacing: 0) {
-                TabBarButton(icon: "house.fill", tab: .home, selectedTab: $selectedTab)
-                TabBarButton(icon: "person.2.fill", tab: .friends, selectedTab: $selectedTab)
-                TabBarButton(icon: "person.3.fill", tab: .groups, selectedTab: $selectedTab)
-                TabBarButton(icon: "clock.arrow.circlepath", tab: .activity, selectedTab: $selectedTab)
-                TabBarButton(icon: "person.circle", tab: .profile, selectedTab: $selectedTab) // Changed icon and tab
+                TabBarButton(icon: "house.fill", tab: .home, selectedTab: $selectedTab, user: nil)
+                TabBarButton(icon: "person.2.fill", tab: .friends, selectedTab: $selectedTab, user: nil)
+                TabBarButton(icon: "person.3.fill", tab: .groups, selectedTab: $selectedTab, user: nil)
+                TabBarButton(icon: "clock.arrow.circlepath", tab: .activity, selectedTab: $selectedTab, user: nil)
+                // For .profile, supply the current user!
+                TabBarButton(icon: "person.circle", tab: .profile, selectedTab: $selectedTab, user: user)
             }
             .padding(.horizontal, 32)
             .frame(height: 72)
@@ -33,24 +35,5 @@ struct CustomTabBar: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, 0)
         .background(Color.clear)
-    }
-}
-
-struct TabBarButton: View {
-    let icon: String
-    let tab: MainTab
-    @Binding var selectedTab: MainTab
-
-    var body: some View {
-        Button(action: {
-            selectedTab = tab
-        }) {
-            VStack {
-                Image(systemName: icon)
-                    .font(.system(size: 26, weight: .medium))
-                    .foregroundColor(selectedTab == tab ? Color.green : Color(.systemGray))
-            }
-            .frame(maxWidth: .infinity)
-        }
     }
 }

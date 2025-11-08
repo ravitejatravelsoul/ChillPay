@@ -42,11 +42,13 @@ class AuthService: ObservableObject {
         email: String,
         password: String,
         name: String,
-        avatar: String,
+        avatar: String = "", // legacy emoji
         bio: String? = nil,
         phone: String? = nil,
         notificationsEnabled: Bool = true,
         faceIDEnabled: Bool = false,
+        avatarSeed: String = "defaultseed",   // DiceBear
+        avatarStyle: String = "adventurer",   // DiceBear
         onProfileCreated: (() -> Void)? = nil
     ) {
         isCreatingUserProfile = true
@@ -76,7 +78,9 @@ class AuthService: ObservableObject {
                 bio: bio,
                 phone: phone,
                 notificationsEnabled: notificationsEnabled,
-                faceIDEnabled: faceIDEnabled
+                faceIDEnabled: faceIDEnabled,
+                avatarSeed: avatarSeed,
+                avatarStyle: avatarStyle
             ) { created in
                 DispatchQueue.main.async {
                     self.isCreatingUserProfile = false
@@ -231,6 +235,8 @@ class AuthService: ObservableObject {
         phone: String? = nil,
         notificationsEnabled: Bool = true,
         faceIDEnabled: Bool = false,
+        avatarSeed: String = "defaultseed",
+        avatarStyle: String = "adventurer",
         completion: ((Bool) -> Void)? = nil
     ) {
         let uid = authUser.uid
@@ -241,6 +247,8 @@ class AuthService: ObservableObject {
             "providers": authUser.providerData.map { $0.providerID },
             "emailVerified": authUser.isEmailVerified,
             "avatar": avatar,
+            "avatarSeed": avatarSeed,      // DiceBear seed
+            "avatarStyle": avatarStyle,    // DiceBear style
             "bio": bio ?? "",
             "phone": phone ?? "",
             "notificationsEnabled": notificationsEnabled,
@@ -314,13 +322,32 @@ class AuthService: ObservableObject {
         }
     }
 
-    func updateProfile(name: String, phone: String, bio: String, avatar: String) {
+    func updateDiceBearAvatar(seed: String, style: String) {
+        guard let uid = user?.uid else { return }
+        db.collection("users").document(uid).updateData([
+            "avatarSeed": seed,
+            "avatarStyle": style
+        ]) { err in
+            if let err = err {
+                print("updateDiceBearAvatar error: \(err.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    self.user?.avatarSeed = seed
+                    self.user?.avatarStyle = style
+                }
+            }
+        }
+    }
+
+    func updateProfile(name: String, phone: String, bio: String, avatar: String, avatarSeed: String, avatarStyle: String) {
         guard let uid = user?.uid else { return }
         db.collection("users").document(uid).updateData([
             "name": name,
             "phone": phone,
             "bio": bio,
-            "avatar": avatar
+            "avatar": avatar,
+            "avatarSeed": avatarSeed,
+            "avatarStyle": avatarStyle
         ]) { err in
             if let err = err {
                 print("updateProfile error: \(err.localizedDescription)")
@@ -330,6 +357,8 @@ class AuthService: ObservableObject {
                     self.user?.phone = phone
                     self.user?.bio = bio
                     self.user?.avatar = avatar
+                    self.user?.avatarSeed = avatarSeed
+                    self.user?.avatarStyle = avatarStyle
                 }
             }
         }
@@ -373,6 +402,8 @@ class AuthService: ObservableObject {
             providers: data["providers"] as? [String] ?? [],
             emailVerified: data["emailVerified"] as? Bool ?? false,
             avatar: data["avatar"] as? String,
+            avatarSeed: data["avatarSeed"] as? String ?? "defaultseed",
+            avatarStyle: data["avatarStyle"] as? String ?? "adventurer",
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             lastLoginAt: (data["lastLoginAt"] as? Timestamp)?.dateValue() ?? Date(),
             bio: data["bio"] as? String,

@@ -18,10 +18,27 @@ struct ProfileView: View {
                 Spacer().frame(height: 40)
                 if let user = authService.user {
                     VStack(spacing: 16) {
-                        // Avatar Setup
-                        Text(user.avatar ?? "🙂")
-                            .font(.system(size: 80))
-                            .padding(.bottom, 8)
+                        // DiceBear Avatar Setup: Display DiceBear PNG avatar if available, otherwise fallback to emoji
+                        if !user.avatarSeed.isEmpty && !user.avatarStyle.isEmpty {
+                            let avatarUrl = "https://api.dicebear.com/7.x/\(user.avatarStyle)/png?seed=\(user.avatarSeed)"
+                            AsyncImage(url: URL(string: avatarUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .clipShape(Circle())
+                                    .frame(width: 80, height: 80)
+                                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 3))
+                                    .padding(.bottom, 8)
+                            } placeholder: {
+                                ProgressView()
+                                    .frame(width: 80, height: 80)
+                                    .padding(.bottom, 8)
+                            }
+                        } else {
+                            Text(user.avatar ?? "🙂")
+                                .font(.system(size: 80))
+                                .padding(.bottom, 8)
+                        }
                         Text(user.name)
                             .font(.title)
                             .bold()

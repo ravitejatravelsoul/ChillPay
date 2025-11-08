@@ -4,6 +4,8 @@ struct ProfileEditView: View {
     @ObservedObject var authService = AuthService.shared
     // Load initial values from user, fallback if nil
     @State private var selectedAvatar: String? = AuthService.shared.user?.avatar
+    @State private var avatarSeed: String = AuthService.shared.user?.avatarSeed ?? "raviteja"
+    @State private var avatarStyle: String = AuthService.shared.user?.avatarStyle ?? "adventurer"
     @State private var name: String = AuthService.shared.user?.name ?? ""
     @State private var phone: String = AuthService.shared.user?.phone ?? ""
     @State private var bio: String = AuthService.shared.user?.bio ?? ""
@@ -27,7 +29,8 @@ struct ProfileEditView: View {
                     Text("Avatar")
                         .font(.headline)
                         .foregroundColor(.white.opacity(0.85))
-                    EmojiAvatarPicker(selectedAvatar: $selectedAvatar)
+                    // DiceBear Avatar Picker (replace EmojiAvatarPicker if not needed anymore)
+                    AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                         .padding(.horizontal, 4)
                 }
                 .padding()
@@ -42,12 +45,15 @@ struct ProfileEditView: View {
                 }
 
                 Button(action: {
-                    if let emoji = selectedAvatar, !name.isEmpty {
+                    if !name.isEmpty {
+                        // Save both old emoji avatar (if still needed) and DiceBear avatar configs
                         authService.updateProfile(
                             name: name,
                             phone: phone,
                             bio: bio,
-                            avatar: emoji
+                            avatar: selectedAvatar ?? "",
+                            avatarSeed: avatarSeed,
+                            avatarStyle: avatarStyle
                         )
                     } else {
                         errorMessage = "Please fill all required fields and pick an avatar."
@@ -57,12 +63,12 @@ struct ProfileEditView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(selectedAvatar != nil && !name.isEmpty ? ChillTheme.accent : Color.gray.opacity(0.5))
+                        .background((!name.isEmpty) ? ChillTheme.accent : Color.gray.opacity(0.5))
                         .foregroundColor(.white)
                         .cornerRadius(14)
                 }
                 .padding(.horizontal, 24)
-                .disabled(selectedAvatar == nil || name.isEmpty)
+                .disabled(name.isEmpty)
 
                 Spacer()
             }
