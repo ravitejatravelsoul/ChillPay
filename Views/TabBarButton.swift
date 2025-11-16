@@ -11,29 +11,21 @@ struct TabBarButton: View {
             selectedTab = tab
         }) {
             VStack {
-                // For profile tab: show DiceBear avatar if available!
-                if tab == .profile, let user = user,
-                   !user.avatarSeed.isEmpty, !user.avatarStyle.isEmpty {
-                    let avatarUrl = "https://api.dicebear.com/7.x/\(user.avatarStyle)/png?seed=\(user.avatarSeed)"
-                    AsyncImage(url: URL(string: avatarUrl)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 30, height: 30)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle().stroke(selectedTab == .profile ? Color.green : Color(.systemGray), lineWidth: 2)
-                            )
-                    } placeholder: {
-                        Circle()
-                            .fill(Color(.systemGray5))
-                            .frame(width: 30, height: 30)
-                            .overlay(
-                                Image(systemName: icon)
-                                    .font(.system(size: 22, weight: .medium))
-                                    .foregroundColor(Color(.systemGray))
-                            )
-                    }
+                if tab == .profile, let user = user {
+                    // Convert the UserProfile into the lightweight User type so AvatarView can be used
+                    let lightweight = User(
+                        id: user.uid,
+                        name: user.name,
+                        email: user.email,
+                        avatar: user.avatar,
+                        avatarSeed: user.avatarSeed,
+                        avatarStyle: user.avatarStyle
+                    )
+                    AvatarView(user: lightweight)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Circle().stroke(selectedTab == .profile ? Color.green : Color(.systemGray), lineWidth: 2)
+                        )
                 } else {
                     Image(systemName: icon)
                         .font(.system(size: 26, weight: .medium))

@@ -109,9 +109,17 @@ final class FriendsViewModel: ObservableObject {
 
         friendRef.getDocument { doc, _ in
             if let doc = doc, let data = doc.data() {
-                let user = User(id: friendId,
-                                name: data["name"] as? String ?? friendEmail,
-                                email: data["email"] as? String ?? friendEmail)
+
+                // ⬇️ include avatar metadata
+                let user = User(
+                    id: friendId,
+                    name: data["name"] as? String ?? friendEmail,
+                    email: data["email"] as? String ?? friendEmail,
+                    avatar: data["avatar"] as? String,
+                    avatarSeed: data["avatarSeed"] as? String,
+                    avatarStyle: data["avatarStyle"] as? String
+                )
+
                 DispatchQueue.main.async {
                     if !self.friends.contains(where: { $0.id == user.id }) &&
                         !self.deletedFriendIds.contains(user.id) &&
@@ -169,12 +177,20 @@ final class FriendsViewModel: ObservableObject {
 
             self.db.collection("users").whereField(FieldPath.documentID(), in: validIds).getDocuments { snapshot, _ in
                 guard let docs = snapshot?.documents else { return }
+
+                // ⬇️ include avatar metadata when building User objects
                 let users = docs.map {
                     let d = $0.data()
-                    return User(id: $0.documentID,
-                                name: d["name"] as? String ?? "",
-                                email: d["email"] as? String)
+                    return User(
+                        id: $0.documentID,
+                        name: d["name"] as? String ?? "",
+                        email: d["email"] as? String,
+                        avatar: d["avatar"] as? String,
+                        avatarSeed: d["avatarSeed"] as? String,
+                        avatarStyle: d["avatarStyle"] as? String
+                    )
                 }
+
                 let combined = Set(users).union(directUsers)
                     .filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
                 DispatchQueue.main.async {

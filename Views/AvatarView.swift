@@ -1,24 +1,94 @@
 import SwiftUI
 
-/// Displays a user’s initials inside a colored circle.
-/// A deterministic color palette is chosen based on the user's id string so that each user always has
-/// the same avatar color.  This view is used throughout the UI wherever avatars are needed.
 struct AvatarView: View {
     let user: User
-    
-    /// Deterministically pick a colour based on the user's id string.
-    private var color: Color {
-        let hash = abs(user.id.hashValue)
-        let palette: [Color] = [.blue, .green, .orange, .pink, .purple, .red, .yellow, .teal]
-        return palette[hash % palette.count]
-    }
-    
+    var size: CGFloat = 32
+
     var body: some View {
-        let initial = String(user.name.prefix(1)).uppercased()
-        Text(initial)
-            .font(.headline)
-            .foregroundColor(.white)
-            .frame(width: 32, height: 32)
-            .background(Circle().fill(color))
+        avatarContent()
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+    }
+
+    // ---------------------------------------------------------
+    // MARK: - MAIN VIEW DECISION (NO GROUP / NO CLOSURES)
+    // ---------------------------------------------------------
+    @ViewBuilder
+    private func avatarContent() -> some View {
+        if hasValidDiceBear() {
+            RemoteAvatarImage(url: dicebearURL()!,
+                              fallbackColor: user.avatarColor)
+        }
+        else if let emoji = user.avatar, emoji.isEmpty == false {
+            Text(emoji)
+                .font(.system(size: size * 0.7))
+                .frame(width: size, height: size)
+        }
+        else {
+            Circle()
+                .fill(user.avatarColor)
+                .overlay(
+                    Text(user.initial)
+                        .foregroundColor(.white)
+                        .font(.system(size: size * 0.45, weight: .bold))
+                )
+        }
+    }
+
+    // ---------------------------------------------------------
+    // MARK: - Helpers
+    // ---------------------------------------------------------
+    private func hasValidDiceBear() -> Bool {
+        if let s = user.avatarSeed,
+           let st = user.avatarStyle,
+           !s.isEmpty,
+           !st.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    private func dicebearURL() -> URL? {
+        guard let seed = user.avatarSeed,
+              let style = user.avatarStyle else { return nil }
+
+        let url = "https://api.dicebear.com/7.x/\(style)/png?seed=\(seed)&size=256"
+        return URL(string: url)
+    }
+}
+
+// -------------------------------------------------------------
+// MARK: - Remote Image Loader (No AsyncImage)
+// -------------------------------------------------------------
+struct RemoteAvatarImage: View {
+    let url: URL
+    let fallbackColor: Color
+
+    @State private var imageData: Data? = nil
+
+    var body: some View {
+        ZStack {
+            if let data = imageData,
+               let uiImg = UIImage(data: data) {
+
+                Image(uiImage: uiImg)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle()
+                    .fill(fallbackColor)
+                    .onAppear {
+                        loadImage()
+                    }
+            }
+        }
+    }
+
+    private func loadImage() {
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            DispatchQueue.main.async {
+                self.imageData = data
+            }
+        }.resume()
     }
 }

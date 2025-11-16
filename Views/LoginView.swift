@@ -81,7 +81,7 @@ struct LoginView: View {
                 if email.isEmpty {
                     errorMessage = "Enter your email above to reset password."
                 } else {
-                    authService.sendPasswordReset(email: email)
+                    AuthService.shared.sendPasswordReset(email: email)
                     errorMessage = "Password reset email sent (if account exists)."
                 }
             }

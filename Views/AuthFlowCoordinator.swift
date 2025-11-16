@@ -68,15 +68,15 @@ struct AuthFlowCoordinator: View {
             }
         }
         .onAppear { restoreSessionIfPossible() }
-        .onChange(of: authService.isAuthenticated) { _,_ in syncFlowOnAuthChange() }
-        .onChange(of: authService.user) { _,_ in syncFlowOnAuthChange() }
+        .onChange(of: authService.isAuthenticated) { _, _ in syncFlowOnAuthChange() }
+        .onChange(of: authService.user) { _, _ in syncFlowOnAuthChange() }
     }
 
     private func restoreSessionIfPossible() {
         if let currentUser = Auth.auth().currentUser {
             authService.setUser(from: currentUser)
             setCurrentUserFromProfile()
-            flowScreen = .mainApp // On restore, always go to dashboard (never verify email here)
+            flowScreen = .mainApp // On restore, always go to dashboard
             isFromSignup = false
         } else {
             flowScreen = .login
@@ -97,16 +97,20 @@ struct AuthFlowCoordinator: View {
         }
     }
 
+    /// ⬇️ IMPORTANT: always propagate avatar fields into the lightweight `User`
     private func setCurrentUserFromProfile() {
-        if let userProfile = authService.user {
-            let myUid = userProfile.uid
-            if let existing = FriendsViewModel.shared.friends.first(where: { $0.id == myUid }) {
-                FriendsViewModel.shared.currentUser = existing
-            } else {
-                let user = User(id: myUid, name: userProfile.name, email: userProfile.email)
-                FriendsViewModel.shared.friends.append(user)
-                FriendsViewModel.shared.currentUser = user
-            }
-        }
+        guard let profile = authService.user else { return }
+
+        let user = User(
+            id: profile.uid,
+            name: profile.name,
+            email: profile.email,
+            avatar: profile.avatar,
+            avatarSeed: profile.avatarSeed,
+            avatarStyle: profile.avatarStyle
+        )
+
+        FriendsViewModel.shared.currentUser = user
+        FriendsViewModel.shared.refreshFriends()
     }
 }

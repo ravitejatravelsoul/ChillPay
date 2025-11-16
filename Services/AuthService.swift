@@ -173,7 +173,17 @@ class AuthService: ObservableObject {
                 self.user = decoded
                 self.isAuthenticated = true
                 self.isEmailVerified = decoded.emailVerified
-                let minimal = User(id: decoded.uid, name: decoded.name, email: decoded.email)
+
+                // ⬇️ include avatar fields in minimal user
+                let minimal = User(
+                    id: decoded.uid,
+                    name: decoded.name,
+                    email: decoded.email,
+                    avatar: decoded.avatar,
+                    avatarSeed: decoded.avatarSeed,
+                    avatarStyle: decoded.avatarStyle
+                )
+
                 FriendsViewModel.shared.currentUser = minimal
                 FriendsViewModel.shared.fetchFriends()
                 onLoginProgress?(nil)
@@ -302,7 +312,17 @@ class AuthService: ObservableObject {
                 self.user = decoded
                 self.isAuthenticated = true
                 self.isEmailVerified = decoded.emailVerified
-                let minimal = User(id: decoded.uid, name: decoded.name, email: decoded.email)
+
+                // ⬇️ include avatar fields when pushing to FriendsVM
+                let minimal = User(
+                    id: decoded.uid,
+                    name: decoded.name,
+                    email: decoded.email,
+                    avatar: decoded.avatar,
+                    avatarSeed: decoded.avatarSeed,
+                    avatarStyle: decoded.avatarStyle
+                )
+
                 FriendsViewModel.shared.currentUser = minimal
                 FriendsViewModel.shared.fetchFriends()
             }
@@ -425,7 +445,16 @@ class AuthService: ObservableObject {
         if let currentUser = self.user, currentUser.uid == uid {
             self.isAuthenticated = true
             self.isEmailVerified = firebaseUser.isEmailVerified
-            FriendsViewModel.shared.currentUser = User(id: uid, name: currentUser.name, email: currentUser.email)
+
+            // ⬇️ propagate avatar fields too
+            FriendsViewModel.shared.currentUser = User(
+                id: uid,
+                name: currentUser.name,
+                email: currentUser.email,
+                avatar: currentUser.avatar,
+                avatarSeed: currentUser.avatarSeed,
+                avatarStyle: currentUser.avatarStyle
+            )
             return
         }
         self.isAuthenticated = true

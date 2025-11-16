@@ -59,7 +59,10 @@ struct EditGroupView: View {
                                     selectedMemberIDs.insert(friend.id)
                                 }
                             }) {
-                                HStack {
+                                HStack(spacing: 12) {
+                                    // Avatar for each selectable member
+                                    AvatarView(user: friend, size: 28)
+                                        .frame(width: 28, height: 28)
                                     VStack(alignment: .leading) {
                                         Text(friend.id == FriendsViewModel.shared.currentUser?.id ? "Me" : friend.name)
                                         if let email = friend.email, !email.isEmpty {

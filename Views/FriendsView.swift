@@ -208,14 +208,9 @@ struct SelfSummaryCard: View {
     var body: some View {
         VStack {
             HStack {
-                Circle()
-                    .fill(user.avatarColor)
+                // Use unified AvatarView for the current user
+                AvatarView(user: user)
                     .frame(width: 44, height: 44)
-                    .overlay(
-                        Text(user.initial)
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.white)
-                    )
                 VStack(alignment: .leading) {
                     Text(user.name)
                         .font(.system(size: 18, weight: .semibold))
@@ -317,14 +312,9 @@ struct FriendRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(friend.avatarColor)
+            // Use unified AvatarView for each friend
+            AvatarView(user: friend)
                 .frame(width: 44, height: 44)
-                .overlay(
-                    Text(friend.initial)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(friend.name)
@@ -365,12 +355,4 @@ struct FriendRow: View {
     }
 }
 
-// MARK: - Avatar Helpers
-extension User {
-    var avatarColor: Color {
-        let colors: [Color] = [.blue, .green, .red, .pink, .orange, .purple, .teal]
-        let hash = abs(name.hashValue)
-        return colors[hash % colors.count]
-    }
-    var initial: String { String(name.prefix(1)).uppercased() }
-}
+// The avatar colour and initial helpers are now provided by the User model itself.

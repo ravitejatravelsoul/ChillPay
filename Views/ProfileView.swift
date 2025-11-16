@@ -14,44 +14,46 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
+
             VStack(spacing: 32) {
+
                 Spacer().frame(height: 40)
-                if let user = authService.user {
+
+                // MARK: User Card
+                if let profile = authService.user {
+
+                    let lightweight = User(
+                        id: profile.uid,
+                        name: profile.name,
+                        email: profile.email,
+                        avatar: profile.avatar,
+                        avatarSeed: profile.avatarSeed,
+                        avatarStyle: profile.avatarStyle
+                    )
+
                     VStack(spacing: 16) {
-                        // DiceBear Avatar Setup: Display DiceBear PNG avatar if available, otherwise fallback to emoji
-                        if !user.avatarSeed.isEmpty && !user.avatarStyle.isEmpty {
-                            let avatarUrl = "https://api.dicebear.com/7.x/\(user.avatarStyle)/png?seed=\(user.avatarSeed)"
-                            AsyncImage(url: URL(string: avatarUrl)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .clipShape(Circle())
-                                    .frame(width: 80, height: 80)
-                                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 3))
-                                    .padding(.bottom, 8)
-                            } placeholder: {
-                                ProgressView()
-                                    .frame(width: 80, height: 80)
-                                    .padding(.bottom, 8)
-                            }
-                        } else {
-                            Text(user.avatar ?? "🙂")
-                                .font(.system(size: 80))
-                                .padding(.bottom, 8)
-                        }
-                        Text(user.name)
+
+                        AvatarView(user: lightweight, size: 80)
+                            .frame(width: 80, height: 80)
+                            .overlay(Circle().stroke(Color.accentColor, lineWidth: 3))
+                            .padding(.bottom, 8)
+
+                        Text(profile.name)
                             .font(.title)
                             .bold()
                             .foregroundColor(.white)
-                        Text(user.email)
+
+                        Text(profile.email)
                             .font(.subheadline)
                             .foregroundColor(.white.opacity(0.7))
-                        if let phone = user.phone, !phone.isEmpty {
+
+                        if let phone = profile.phone, !phone.isEmpty {
                             Text("Phone: \(phone)")
                                 .foregroundColor(.white.opacity(0.7))
                                 .font(.subheadline)
                         }
-                        if let bio = user.bio, !bio.isEmpty {
+
+                        if let bio = profile.bio, !bio.isEmpty {
                             Text(bio)
                                 .foregroundColor(.white.opacity(0.8))
                                 .font(.footnote)
@@ -64,17 +66,19 @@ struct ProfileView: View {
                     .cornerRadius(24)
                     .shadow(radius: 12)
                     .padding(.horizontal, 16)
+
                 } else {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: ChillTheme.accent))
                         .scaleEffect(1.5)
                 }
-                
+
+                // MARK: Buttons
                 VStack(spacing: 20) {
+
                     Button(action: { showEditProfile = true }) {
                         HStack {
-                            Image(systemName: "pencil.circle")
-                                .foregroundColor(.white)
+                            Image(systemName: "pencil.circle").foregroundColor(.white)
                             Text("Edit Profile")
                         }
                         .font(.headline)
@@ -88,29 +92,26 @@ struct ProfileView: View {
                     .sheet(isPresented: $showEditProfile) {
                         ProfileEditView()
                     }
-                    
+
                     Toggle(isOn: $notificationsEnabled) {
-                        Label("Enable Notifications", systemImage: "bell")
-                            .foregroundColor(.white)
+                        Label("Enable Notifications", systemImage: "bell").foregroundColor(.white)
                     }
                     .padding(.horizontal, 32)
                     .onChange(of: notificationsEnabled) { _, newValue in
                         authService.updateNotificationsEnabled(newValue)
                     }
-                    
+
                     Toggle(isOn: $faceIDEnabled) {
-                        Label("Use Face ID", systemImage: "faceid")
-                            .foregroundColor(.white)
+                        Label("Use Face ID", systemImage: "faceid").foregroundColor(.white)
                     }
                     .padding(.horizontal, 32)
                     .onChange(of: faceIDEnabled) { _, newValue in
                         authService.updateFaceIDEnabled(newValue)
                     }
-                    
+
                     Button(action: { showPaymentsSheet = true }) {
                         HStack {
-                            Image(systemName: "creditcard")
-                                .foregroundColor(.white)
+                            Image(systemName: "creditcard").foregroundColor(.white)
                             Text("Payments")
                         }
                         .font(.headline)
@@ -130,17 +131,17 @@ struct ProfileView: View {
                                 .font(.title3)
                                 .bold()
                                 .foregroundColor(.primary)
+
                             Button("Close") { showPaymentsSheet = false }
                                 .foregroundColor(.blue)
                                 .padding(.top, 12)
                         }
                         .padding()
                     }
-                    
+
                     Button(action: { showContactSheet = true }) {
                         HStack {
-                            Image(systemName: "envelope")
-                                .foregroundColor(.white)
+                            Image(systemName: "envelope").foregroundColor(.white)
                             Text("Contact Us")
                         }
                         .font(.headline)
@@ -156,16 +157,18 @@ struct ProfileView: View {
                             Image(systemName: "envelope")
                                 .font(.system(size: 36))
                                 .foregroundColor(.green)
+
                             Text("Contact us at support@chillpay.com\nor reach out via WhatsApp!")
                                 .multilineTextAlignment(.center)
                                 .font(.body)
+
                             Button("Close") { showContactSheet = false }
                                 .foregroundColor(.blue)
                                 .padding(.top, 12)
                         }
                         .padding()
                     }
-                    
+
                     Button(action: { showLogoutSheet = true }) {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -182,18 +185,20 @@ struct ProfileView: View {
                     .padding(.horizontal, 32)
                     .alert("Log Out", isPresented: $showLogoutSheet) {
                         Button("Log Out", role: .destructive) {
-                            authService.signOut()
+                            authService.signOut()   // FIXED
                         }
                         Button("Cancel", role: .cancel) { }
                     } message: {
                         Text("Are you sure you want to log out?")
                     }
                 }
+
                 Spacer().frame(height: 40)
             }
         }
         .onAppear {
-            if authService.user == nil, let currentUser = Auth.auth().currentUser {
+            if authService.user == nil,
+               let currentUser = Auth.auth().currentUser {
                 authService.fetchUserDocument(uid: currentUser.uid)
             }
             notificationsEnabled = authService.user?.notificationsEnabled ?? true
