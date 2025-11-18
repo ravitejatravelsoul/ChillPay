@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>650142859078-31al2qkb4u1063tq63obtv2esvmkp0n8.apps.googleusercontent.com</string>
+	<string>650142859078-s1kjjmts68tu824k5mj2jqdqd406liph.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.650142859078-31al2qkb4u1063tq63obtv2esvmkp0n8</string>
+	<string>com.googleusercontent.apps.650142859078-s1kjjmts68tu824k5mj2jqdqd406liph</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBD09qz8Ssjil7A7OMEictppIAvTCdQtJM</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,22 +13,22 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.chillpay.chillpay</string>
+	<string>com.ChillPay.ChillPay</string>
 	<key>PROJECT_ID</key>
 	<string>chillpay-358ad</string>
 	<key>STORAGE_BUCKET</key>
 	<string>chillpay-358ad.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:650142859078:ios:cce5926f9d74559f7e2f47</string>
+	<string>1:650142859078:ios:8e0a4b129830a53f7e2f47</string>
 </dict>
 </plist>

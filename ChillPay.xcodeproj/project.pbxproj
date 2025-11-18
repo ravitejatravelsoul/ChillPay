@@ -20,7 +20,7 @@
 		3A11D7232E740163004949B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70C2E73FE26004949B6 /* Expense.swift */; };
 		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
 		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
-		3A3F48C92EB8678D002CA611 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */; };
+		3A5FB0F82ECACFAA0066D90A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */; };
 		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
 		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
 		3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD92E8849570093D65A /* GroupsView.swift */; };
@@ -109,7 +109,7 @@
 		3A11D7162E73FEEC004949B6 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
-		3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		3A80FCD92E8849570093D65A /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
@@ -162,7 +162,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		3A2C71BF2EB79696009F3225 /* Exceptions for "ChillPay" folder in "ChillPay" target */ = {
+		3AA08E832ECAE9A900D8480A /* Exceptions for "ChillPay" folder in "ChillPay" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -175,7 +175,7 @@
 		3A11D6DD2E73FD16004949B6 /* ChillPay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3A2C71BF2EB79696009F3225 /* Exceptions for "ChillPay" folder in "ChillPay" target */,
+				3AA08E832ECAE9A900D8480A /* Exceptions for "ChillPay" folder in "ChillPay" target */,
 			);
 			path = ChillPay;
 			sourceTree = "<group>";
@@ -223,7 +223,7 @@
 		3A11D6D22E73FD16004949B6 = {
 			isa = PBXGroup;
 			children = (
-				3A3F48C82EB8678D002CA611 /* GoogleService-Info.plist */,
+				3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */,
 				3A80FD2B2E99F7410093D65A /* AppDelegate.swift */,
 				3A80FCEF2E8999560093D65A /* ChillTheme.swift */,
 				3AD5E56C2E7E669000FAE979 /* ChillPayApp.swift */,
@@ -469,7 +469,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3A3F48C92EB8678D002CA611 /* GoogleService-Info.plist in Resources */,
+				3A5FB0F82ECACFAA0066D90A /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
