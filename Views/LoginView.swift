@@ -4,6 +4,13 @@ struct LoginView: View {
     @ObservedObject var authService = AuthService.shared
     @State private var email = ""
     @State private var password = ""
+    @State private var showPassword: Bool = false
+    /// Persisted Face ID preference. Reflects whether the user wants to use
+    /// biometrics on next login. Updated after successful login.
+    @AppStorage("faceIDEnabledPreference") private var faceIDToggle: Bool = false
+
+    /// Controls presentation of the forgot password sheet.
+    @State private var showForgotPassword: Bool = false
     @State private var errorMessage: String?
     var onSignup: () -> Void
     var onLoginSuccess: () -> Void
@@ -12,14 +19,39 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
-            // Header for the login screen.  Use the theme's header font and dark text colour for visibility
+
+            // Header for the login screen. Use the theme's header font and dark text colour for visibility
             Text("Login")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(ChillTheme.darkText)
 
             VStack(spacing: 18) {
                 ChillTextField(title: "Email", text: $email)
-                ChillTextField(title: "Password", text: $password, isSecure: true)
+                // Custom password field with visibility toggle
+                HStack {
+                    if showPassword {
+                        TextField("Password", text: $password)
+                            .autocapitalization(.none)
+                            .foregroundColor(ChillTheme.darkText)
+                    } else {
+                        SecureField("Password", text: $password)
+                            .autocapitalization(.none)
+                            .foregroundColor(ChillTheme.darkText)
+                    }
+                    Button(action: { showPassword.toggle() }) {
+                        Image(systemName: showPassword ? "eye.slash" : "eye")
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 52)
+                .background(ChillTheme.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(ChillTheme.softGray, lineWidth: 1)
+                )
+                .cornerRadius(16)
+
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .foregroundColor(.red)
@@ -28,6 +60,7 @@ struct LoginView: View {
             }
             .padding(.horizontal, 20)
 
+            // Login button
             Button(action: {
                 errorMessage = nil
                 authService.signInWithEmail(
@@ -43,9 +76,14 @@ struct LoginView: View {
                             FriendsViewModel.shared.currentUser = User(
                                 id: userProfile.uid,
                                 name: userProfile.name,
-                                email: userProfile.email
+                                email: userProfile.email,
+                                avatar: userProfile.avatar,
+                                avatarSeed: userProfile.avatarSeed,
+                                avatarStyle: userProfile.avatarStyle
                             )
                             if authService.isEmailVerified {
+                                // Update Face ID preference in Firestore
+                                authService.updateFaceIDEnabled(faceIDToggle)
                                 onLoginSuccess()
                             } else {
                                 let msg = "Please verify your email before logging in."
@@ -76,17 +114,23 @@ struct LoginView: View {
             .foregroundColor(.white)
             .cornerRadius(14)
             .padding(.horizontal, 24)
-            .disabled(authService.isCreatingUserProfile) // Block login while creating user profile
+            .disabled(authService.isCreatingUserProfile)
 
-            Button("Forgot Password?") {
-                if email.isEmpty {
-                    errorMessage = "Enter your email above to reset password."
-                } else {
-                    AuthService.shared.sendPasswordReset(email: email)
-                    errorMessage = "Password reset email sent (if account exists)."
-                }
+            // Face ID toggle persists to user profile after login
+            Toggle("Use Face ID next time", isOn: $faceIDToggle)
+                .foregroundColor(ChillTheme.darkText)
+                .padding(.horizontal, 24)
+                .tint(ChillTheme.accent)
+
+            // Forgot password link shows a modal screen
+            Button(action: { showForgotPassword = true }) {
+                Text("Forgot Password?")
+                    .foregroundColor(ChillTheme.accent)
             }
-            .foregroundColor(ChillTheme.accent)
+            .padding(.top, 8)
+            .sheet(isPresented: $showForgotPassword) {
+                ForgotPasswordView(initialEmail: email)
+            }
 
             HStack {
                 Text("Don't have an account?")

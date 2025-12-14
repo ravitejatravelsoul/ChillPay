@@ -1,15 +1,5 @@
-//
-//  ChillPrimaryButton 2.swift
-//  ChillPay
-//
-//  Created by Raviteja on 12/13/25.
-//
-
-
 import SwiftUI
 
-/// Reusable primary action button for ChillPay.
-/// Use this for all main actions like Add / Save / Create.
 struct ChillPrimaryButton: View {
     let title: String
     var isDisabled: Bool = false

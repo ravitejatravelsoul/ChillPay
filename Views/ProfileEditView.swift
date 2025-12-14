@@ -11,6 +11,15 @@ struct ProfileEditView: View {
     @State private var bio: String = AuthService.shared.user?.bio ?? ""
     @State private var errorMessage: String?
 
+    // Tracks whether the avatar has been modified from its initial value. When true,
+    // enables the "Save Avatar" button.
+    @State private var avatarChanged: Bool = false
+    // Feedback message for avatar save success.
+    @State private var avatarSaveMessage: String? = nil
+
+    // Presentation mode to allow dismissing this sheet after saving profile
+    @Environment(\.presentationMode) private var presentationMode
+
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
@@ -32,6 +41,25 @@ struct ProfileEditView: View {
                     // DiceBear Avatar Picker (replace EmojiAvatarPicker if not needed anymore)
                     AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                         .padding(.horizontal, 4)
+
+                    // Save Avatar button and feedback
+                    Button(action: saveAvatarIfNeeded) {
+                        if let msg = avatarSaveMessage {
+                            Text(msg)
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else {
+                            Text("Save Avatar")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
+                    }
+                    .background(avatarChanged ? ChillTheme.accent : Color.gray.opacity(0.4))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .disabled(!avatarChanged)
                 }
                 .padding()
                 .background(ChillTheme.card)
@@ -55,6 +83,8 @@ struct ProfileEditView: View {
                             avatarSeed: avatarSeed,
                             avatarStyle: avatarStyle
                         )
+                        // Dismiss after saving profile
+                        presentationMode.wrappedValue.dismiss()
                     } else {
                         errorMessage = "Please fill all required fields and pick an avatar."
                     }
@@ -74,5 +104,33 @@ struct ProfileEditView: View {
             }
         }
         // Do not force dark mode; rely on system appearance
+        // Track changes to avatar fields and enable the Save Avatar button accordingly
+        .onChange(of: avatarSeed) { _, newValue in
+            if let storedSeed = authService.user?.avatarSeed {
+                avatarChanged = (newValue != storedSeed)
+            } else {
+                avatarChanged = true
+            }
+        }
+        .onChange(of: avatarStyle) { _, newValue in
+            if let storedStyle = authService.user?.avatarStyle {
+                avatarChanged = (newValue != storedStyle)
+            } else {
+                avatarChanged = true
+            }
+        }
+    }
+
+    /// Persist the updated avatar to Firestore if it has changed, and show success feedback.
+    private func saveAvatarIfNeeded() {
+        guard avatarChanged else { return }
+        // Persist new avatar to Firestore
+        authService.updateDiceBearAvatar(seed: avatarSeed, style: avatarStyle)
+        avatarSaveMessage = "Saved ✅"
+        avatarChanged = false
+        // Clear the success message after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            avatarSaveMessage = nil
+        }
     }
 }

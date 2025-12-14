@@ -102,11 +102,14 @@ struct ContentView: View {
         .fullScreenCover(isPresented: .constant(shouldShowBiometricGate)) {
             BiometricGateView(
                 onUnlocked: {
+                    // Successful biometric authentication unlocks the app
                     isBiometricUnlocked = true
                 },
                 onUsePasswordInstead: {
-                    // User chooses fallback → allow app access
-                    isBiometricUnlocked = true
+                    // User chooses to use password instead → require full login
+                    // Do not unlock; instead sign out and reset the unlocked flag
+                    isBiometricUnlocked = false
+                    AuthService.shared.signOut()
                 }
             )
         }

@@ -23,6 +23,8 @@
 		3A5F94E02EEE2AE500AD6189 /* ChillPrimaryButton 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */; };
 		3A5F94EF2EEF157800AD6189 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94EE2EEF157800AD6189 /* BiometricAuthService.swift */; };
 		3A5F94F12EEF159400AD6189 /* BiometricGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */; };
+		3A5F95062EEF5B8100AD6189 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F95052EEF5B8100AD6189 /* ForgotPasswordView.swift */; };
+		3A5F95082EEF5BAA00AD6189 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F95072EEF5BAA00AD6189 /* ResetPasswordView.swift */; };
 		3A5FB0F82ECACFAA0066D90A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */; };
 		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
 		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
@@ -115,6 +117,8 @@
 		3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChillPrimaryButton 2.swift"; sourceTree = "<group>"; };
 		3A5F94EE2EEF157800AD6189 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
 		3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricGateView.swift; sourceTree = "<group>"; };
+		3A5F95052EEF5B8100AD6189 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
+		3A5F95072EEF5BAA00AD6189 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetPasswordView.swift; sourceTree = "<group>"; };
 		3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
@@ -274,6 +278,8 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A5F95072EEF5BAA00AD6189 /* ResetPasswordView.swift */,
+				3A5F95052EEF5B8100AD6189 /* ForgotPasswordView.swift */,
 				3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */,
 				3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */,
 				3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */,
@@ -537,8 +543,10 @@
 				3AD5E57E2E7E684900FAE979 /* AnalyticsView.swift in Sources */,
 				3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */,
 				3A80FCF62E89A7B10093D65A /* DashboardView.swift in Sources */,
+				3A5F95062EEF5B8100AD6189 /* ForgotPasswordView.swift in Sources */,
 				3A80FD1B2E8CE6370093D65A /* EmailVerificationView.swift in Sources */,
 				3A80FCFC2E8B4DD10093D65A /* GlobalSettingsSheet.swift in Sources */,
+				3A5F95082EEF5BAA00AD6189 /* ResetPasswordView.swift in Sources */,
 				3A80FCE62E888DDE0093D65A /* AddFriendView.swift in Sources */,
 				3A80FCE42E886DF30093D65A /* GroupSummarySection.swift in Sources */,
 				3AD5E5782E7E67D100FAE979 /* ExpenseDetailView.swift in Sources */,
