@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct ContentView: View {
     @State private var selectedTab: MainTab = .home
@@ -11,13 +12,28 @@ struct ContentView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
 
+    // MARK: - Face ID Gate State
+    @State private var isBiometricUnlocked: Bool = false
+
+    /// Read from Firestore-backed user profile
+    private var biometricLockEnabled: Bool {
+        authService.user?.faceIDEnabled ?? false
+    }
+
+    /// Show gate only when required
+    private var shouldShowBiometricGate: Bool {
+        guard authService.user != nil else { return false }
+        guard biometricLockEnabled else { return false }
+        return !isBiometricUnlocked
+    }
+
     init() {
         let f = FriendsViewModel.shared
         _friendsVM = StateObject(wrappedValue: f)
-        // ✅ GroupViewModel must handle starting its own Firestore listener internally
         _groupVM = StateObject(wrappedValue: GroupViewModel(friendsVM: f))
     }
 
+    // MARK: - Main Tabs
     @ViewBuilder
     private var mainContent: some View {
         switch selectedTab {
@@ -70,26 +86,48 @@ struct ContentView: View {
         .edgesIgnoringSafeArea(.bottom)
         .environmentObject(groupVM)
         .environmentObject(friendsVM)
+
         .sheet(isPresented: $showAddSheet) {
             AddGroupView(groupVM: groupVM, friendsVM: friendsVM)
         }
+
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 hasSeenOnboarding = true
                 showOnboarding = false
             }
         }
+
+        // ✅ Face ID Gate (correct initializer)
+        .fullScreenCover(isPresented: .constant(shouldShowBiometricGate)) {
+            BiometricGateView(
+                onUnlocked: {
+                    isBiometricUnlocked = true
+                },
+                onUsePasswordInstead: {
+                    // User chooses fallback → allow app access
+                    isBiometricUnlocked = true
+                }
+            )
+        }
+
+        // MARK: - Onboarding
         .task {
-            // ✅ Onboarding only; group listener is handled inside GroupViewModel
             if authService.user != nil && !hasSeenOnboarding {
-                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+                try? await Task.sleep(nanoseconds: 300_000_000)
                 showOnboarding = true
             }
         }
-        // If user logs out, close onboarding if needed
+
+        // MARK: - Reset on Login / Logout
         .onChange(of: authService.user?.id) { _, newValue in
             if newValue == nil {
+                // Logged out
                 showOnboarding = false
+                isBiometricUnlocked = false
+            } else {
+                // Logged in
+                isBiometricUnlocked = false
             }
         }
     }

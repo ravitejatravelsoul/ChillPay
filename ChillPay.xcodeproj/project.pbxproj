@@ -21,6 +21,8 @@
 		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
 		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
 		3A5F94E02EEE2AE500AD6189 /* ChillPrimaryButton 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */; };
+		3A5F94EF2EEF157800AD6189 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94EE2EEF157800AD6189 /* BiometricAuthService.swift */; };
+		3A5F94F12EEF159400AD6189 /* BiometricGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */; };
 		3A5FB0F82ECACFAA0066D90A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */; };
 		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
 		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
@@ -111,6 +113,8 @@
 		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
 		3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChillPrimaryButton 2.swift"; sourceTree = "<group>"; };
+		3A5F94EE2EEF157800AD6189 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
+		3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricGateView.swift; sourceTree = "<group>"; };
 		3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
@@ -270,6 +274,7 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A5F94F02EEF159400AD6189 /* BiometricGateView.swift */,
 				3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */,
 				3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */,
 				3AE3D7952EBDA2E900F06448 /* AvatarPickerView.swift */,
@@ -337,6 +342,7 @@
 		3A11D70A2E73FDB1004949B6 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				3A5F94EE2EEF157800AD6189 /* BiometricAuthService.swift */,
 				3A80FCFF2E8B87800093D65A /* UIHelpers.swift */,
 				3A80FCF12E8999C80093D65A /* ExportManager.swift */,
 				3AD5E57F2E7E688400FAE979 /* NotificationManager.swift */,
@@ -507,6 +513,7 @@
 				3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */,
 				3A80FCEA2E888E4A0093D65A /* AddDirectExpenseView.swift in Sources */,
 				3A80FD172E8CE5FD0093D65A /* LoginView.swift in Sources */,
+				3A5F94F12EEF159400AD6189 /* BiometricGateView.swift in Sources */,
 				3AD5E5872E7E6A1500FAE979 /* ExpenseCategory.swift in Sources */,
 				3AD5E5882E7E6A1500FAE979 /* Activity.swift in Sources */,
 				3AD5E5892E7E6A1500FAE979 /* Currency.swift in Sources */,
@@ -551,6 +558,7 @@
 				3A11D7202E740147004949B6 /* AuthService.swift in Sources */,
 				3A11D71A2E74011C004949B6 /* AddGroupView.swift in Sources */,
 				3A80FCF82E8A1B610093D65A /* GroupSettingsSheet.swift in Sources */,
+				3A5F94EF2EEF157800AD6189 /* BiometricAuthService.swift in Sources */,
 				3A80FD002E8B87800093D65A /* UIHelpers.swift in Sources */,
 				3A80FCE22E886AF90093D65A /* GroupSummaryView.swift in Sources */,
 				3A11D7262E740373004949B6 /* StorageManager.swift in Sources */,

@@ -1,19 +1,28 @@
 import SwiftUI
 import FirebaseAuth
+import LocalAuthentication
 
 struct ProfileView: View {
     @ObservedObject var authService = AuthService.shared
+
     @State private var showPaymentsSheet = false
     @State private var showEditProfile = false
     @State private var showContactSheet = false
     @State private var showLogoutSheet = false
 
     @State private var notificationsEnabled: Bool = AuthService.shared.user?.notificationsEnabled ?? true
-    @State private var faceIDEnabled: Bool = AuthService.shared.user?.faceIDEnabled ?? false
 
-    /// Flag stored in user defaults to track if the onboarding has been displayed.  Exposed here to allow
-    /// users to re-show the onboarding from the Profile tab.
+    /// ✅ Local setting (does NOT depend on Firestore)
+    @AppStorage("biometricLockEnabled") private var biometricLockEnabled: Bool = false
+
+    /// Flag stored in user defaults to track if the onboarding has been displayed.
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = true
+
+    private var biometricsAvailable: Bool {
+        let context = LAContext()
+        var error: NSError?
+        return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+    }
 
     var body: some View {
         ZStack {
@@ -106,13 +115,21 @@ struct ProfileView: View {
                         authService.updateNotificationsEnabled(newValue)
                     }
 
-                    Toggle(isOn: $faceIDEnabled) {
-                        Label("Use Face ID", systemImage: "faceid")
+                    // ✅ Face ID / Touch ID lock toggle (local)
+                    Toggle(isOn: $biometricLockEnabled) {
+                        Label("Require Face ID to open ChillPay", systemImage: "faceid")
                             .foregroundColor(ChillTheme.darkText)
                     }
                     .padding(.horizontal, 32)
-                    .onChange(of: faceIDEnabled) { _, newValue in
-                        authService.updateFaceIDEnabled(newValue)
+                    .tint(ChillTheme.accent)
+                    .disabled(!biometricsAvailable)
+                    .opacity(biometricsAvailable ? 1.0 : 0.5)
+
+                    if !biometricsAvailable {
+                        Text("Biometrics not available on this device.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 32)
                     }
 
                     Button(action: { showPaymentsSheet = true }) {
@@ -190,16 +207,14 @@ struct ProfileView: View {
                     .padding(.horizontal, 32)
                     .alert("Log Out", isPresented: $showLogoutSheet) {
                         Button("Log Out", role: .destructive) {
-                            authService.signOut()   // FIXED
+                            authService.signOut()
                         }
                         Button("Cancel", role: .cancel) { }
                     } message: {
                         Text("Are you sure you want to log out?")
                     }
 
-                    // Button to allow the user to view onboarding again
                     Button(action: {
-                        // Reset the onboarding flag – ContentView will show onboarding on next appearance
                         hasSeenOnboarding = false
                     }) {
                         HStack {
@@ -225,8 +240,6 @@ struct ProfileView: View {
                 authService.fetchUserDocument(uid: currentUser.uid)
             }
             notificationsEnabled = authService.user?.notificationsEnabled ?? true
-            faceIDEnabled = authService.user?.faceIDEnabled ?? false
         }
-        // Do not force dark mode; rely on system appearance
     }
 }
