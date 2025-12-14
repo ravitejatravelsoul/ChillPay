@@ -18,7 +18,7 @@ struct ProfileEditView: View {
                 VStack(spacing: 12) {
                     Text("Edit Profile")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                 }
                 .padding(.top, 32)
 
@@ -28,7 +28,7 @@ struct ProfileEditView: View {
                     ChillTextField(title: "Bio (optional)", text: $bio)
                     Text("Avatar")
                         .font(.headline)
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.85))
                     // DiceBear Avatar Picker (replace EmojiAvatarPicker if not needed anymore)
                     AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                         .padding(.horizontal, 4)
@@ -73,6 +73,6 @@ struct ProfileEditView: View {
                 Spacer()
             }
         }
-        .preferredColorScheme(.dark)
+        // Do not force dark mode; rely on system appearance
     }
 }

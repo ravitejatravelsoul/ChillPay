@@ -17,15 +17,9 @@ struct GroupDetailView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(.sRGB, red: 23/255, green: 28/255, blue: 40/255, opacity: 1),
-                    Color(.sRGB, red: 11/255, green: 13/255, blue: 23/255, opacity: 1)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Use the global theme background rather than a dark gradient for a light mode appearance
+            ChillTheme.background
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
@@ -53,13 +47,11 @@ struct GroupDetailView: View {
                     Button(action: { showingAddExpense = true }) {
                         ZStack {
                             Circle()
-                                .fill(LinearGradient(
-                                    gradient: Gradient(colors: [Color.green.opacity(0.8), Color.green]),
-                                    startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 72, height: 72)
-                                .shadow(color: Color.green.opacity(0.28), radius: 15, x: 0, y: 6)
+                                .fill(ChillTheme.accent)
+                                .frame(width: 60, height: 60)
+                                .shadow(color: ChillTheme.accent.opacity(0.25), radius: 8, x: 0, y: 4)
                             Image(systemName: "plus")
-                                .font(.system(size: 34, weight: .bold))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
@@ -137,29 +129,34 @@ struct HeaderCard: View {
             HStack(spacing: 18) {
                 ZStack {
                     Circle()
-                        .fill(Color(group.colorName))
+                        .fill(Color(group.colorName).opacity(0.18))
                         .frame(width: 54, height: 54)
                     Image(systemName: group.iconName)
                         .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                 }
                 VStack(alignment: .leading) {
                     Text(group.name)
                         .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     Text("\(group.members.count) members")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.7))
                 }
                 Spacer()
             }
         }
         .padding()
         .background(
-            LinearGradient(gradient: Gradient(colors: [Color(group.colorName), Color.blue.opacity(0.6)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+            // Blend the group's colour softly into the card background for light mode
+            LinearGradient(
+                gradient: Gradient(colors: [Color(group.colorName).opacity(0.12), ChillTheme.card]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         )
         .cornerRadius(24)
-        .shadow(color: Color(group.colorName).opacity(0.25), radius: 12, x: 0, y: 4)
+        .shadow(color: Color(group.colorName).opacity(0.1), radius: 8, x: 0, y: 3)
     }
 }
 
@@ -174,7 +171,7 @@ struct ExpensesSwipeCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Expenses")
                     .font(.title3.bold())
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 ForEach(Array(group.expenses.sorted(by: { $0.date > $1.date })), id: \.id) { expense in
                     ExpenseRow(
                         expense: expense,
@@ -184,9 +181,9 @@ struct ExpensesSwipeCard: View {
                 }
             }
             .padding()
-            .background(Color(.sRGB, white: 0.11, opacity: 1))
+            .background(ChillTheme.card)
             .cornerRadius(22)
-            .shadow(color: Color.black.opacity(0.13), radius: 7, x: 0, y: 2)
+            .shadow(color: ChillTheme.lightShadow, radius: 7, x: 0, y: 2)
         }
     }
 }
@@ -208,17 +205,17 @@ struct ExpenseRow: View {
                         .font(.system(size: 20))
                     Text(expense.category.displayName)
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                 }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(expense.title)
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 HStack {
                     Text("\(expense.paidBy.name) paid \(expense.amount, specifier: "%.2f")")
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.7))
                     if expense.isRecurring {
                         Text("Recurring")
                             .font(.caption2)
@@ -233,7 +230,7 @@ struct ExpenseRow: View {
             Spacer()
             Button(action: onEdit) {
                 Image(systemName: "pencil")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(ChillTheme.accent)
             }
             Button(action: onDelete) {
                 Image(systemName: "trash")
@@ -241,9 +238,9 @@ struct ExpenseRow: View {
             }
         }
         .padding(10)
-        .background(Color(.sRGB, white: 0.15, opacity: 1))
+        .background(ChillTheme.card)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.09), radius: 2, x: 0, y: 1)
+        .shadow(color: ChillTheme.lightShadow, radius: 2, x: 0, y: 1)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
@@ -262,17 +259,17 @@ struct ActivityCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Activity")
                     .font(.title3.bold())
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 ForEach(group.activity.sorted(by: { $0.date > $1.date }).prefix(5)) { activity in
                     Text(activity.text)
                         .font(.footnote)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.7))
                 }
             }
             .padding()
-            .background(Color(.sRGB, white: 0.11, opacity: 1))
+            .background(ChillTheme.card)
             .cornerRadius(22)
-            .shadow(color: Color.black.opacity(0.11), radius: 7, x: 0, y: 2)
+            .shadow(color: ChillTheme.lightShadow, radius: 7, x: 0, y: 2)
         }
     }
 }

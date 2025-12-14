@@ -15,49 +15,66 @@ struct ExpenseListView: View {
             List {
                 // MARK: - Expense List Section
                 Section {
-                    ForEach(group.expenses) { expense in
-                        HStack(alignment: .top, spacing: 8) {
-                            AvatarView(user: expense.paidBy)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(expense.title)
-                                    .font(.headline)
+                    if group.expenses.isEmpty {
+                        Text("No expenses yet – tap the plus to add your first expense.")
+                            .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(group.expenses) { expense in
+                            HStack(alignment: .top, spacing: 8) {
+                                AvatarView(user: expense.paidBy)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    // Title
+                                    Text(expense.title)
+                                        .font(.headline)
+                                        .foregroundColor(ChillTheme.darkText)
 
-                                let amountString = String(format: "%.2f", expense.amount)
-                                Text("Amount: \(group.currency.symbol)\(amountString)")
+                                    // Amount line
+                                    let amountString = String(format: "%.2f", expense.amount)
+                                    Text("Amount: \(group.currency.symbol)\(amountString)")
+                                        .foregroundColor(ChillTheme.darkText)
 
-                                Text("Category: \(expense.category.displayName)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    // Category line
+                                    Text("Category: \(expense.category.displayName)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
 
-                                Text("Paid by: \(expense.paidBy.name)")
+                                    // Paid by line
+                                    Text("Paid by: \(expense.paidBy.name)")
+                                        .foregroundColor(ChillTheme.darkText)
 
-                                let participantsString = expense.participants
-                                    .map { $0.name }
-                                    .joined(separator: ", ")
-                                Text("Participants: \(participantsString)")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-
-                                if expense.isRecurring {
-                                    Text("Recurring")
+                                    // Participants line
+                                    let participantsString = expense.participants
+                                        .map { $0.name }
+                                        .joined(separator: ", ")
+                                    Text("Participants: \(participantsString)")
                                         .font(.footnote)
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.secondary)
+
+                                    // Recurring label
+                                    if expense.isRecurring {
+                                        Text("Recurring")
+                                            .font(.footnote)
+                                            .foregroundColor(.orange)
+                                    }
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            // Use card background for list row in light mode
+                            .listRowBackground(ChillTheme.card)
+                            .onTapGesture {
+                                selectedExpense = expense
+                            }
+                            .contextMenu {
+                                Button(action: { editingExpense = expense }) {
+                                    Label("Edit", systemImage: "pencil")
                                 }
                             }
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedExpense = expense
+                        .onDelete { offsets in
+                            let expenseVM = ExpenseViewModel(groupVM: groupVM)
+                            expenseVM.deleteExpenses(at: offsets, from: group)
                         }
-                        .contextMenu {
-                            Button(action: { editingExpense = expense }) {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                        }
-                    }
-                    .onDelete { offsets in
-                        let expenseVM = ExpenseViewModel(groupVM: groupVM)
-                        expenseVM.deleteExpenses(at: offsets, from: group)
                     }
                 }
 
@@ -79,9 +96,11 @@ struct ExpenseListView: View {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button(action: { showAddExpense.toggle() }) {
                         Image(systemName: "plus")
+                            .foregroundColor(ChillTheme.accent)
                     }
                     Button(action: { showAnalytics = true }) {
                         Image(systemName: "chart.bar")
+                            .foregroundColor(ChillTheme.accent)
                     }
                 }
             }

@@ -23,18 +23,18 @@ struct ActivitiesView: View {
                             .padding(.horizontal)
 
                         Divider()
-                            .background(Color.white.opacity(0.3))
+                            .background(ChillTheme.softGray)
 
                         // --- ACTIVITY TIMELINE ---
                         Text("Activity Timeline")
                             .font(.title2)
                             .bold()
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                             .padding(.horizontal)
 
                         if combinedActivities.isEmpty {
-                            Text("No activities yet.")
-                                .foregroundColor(.white.opacity(0.6))
+                            Text("No activities yet – add some expenses to get started.")
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
                                 .padding(.horizontal)
                         } else {
                             ForEach(combinedActivities) { activity in
@@ -48,7 +48,6 @@ struct ActivitiesView: View {
                 }
             }
             .navigationTitle("Activities")
-            .preferredColorScheme(.dark)
         }
         .onAppear {
             print("🟢 [ActivitiesView] onAppear — setting up Combine updates")
@@ -115,10 +114,10 @@ struct ActivityRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(activity.text)
                     .font(.body)
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 Text(activity.date, style: .date)
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(ChillTheme.darkText.opacity(0.6))
             }
             Spacer()
         }

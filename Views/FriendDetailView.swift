@@ -30,13 +30,14 @@ struct FriendDetailView: View {
                         AvatarView(user: friend)
                             .frame(width: 64, height: 64)
                         VStack(alignment: .leading, spacing: 6) {
+                            // Friend name uses dark text colour on light card
                             Text(friend.name)
                                 .font(.title2).bold()
-                                .foregroundColor(.white)
+                                .foregroundColor(ChillTheme.darkText)
                             if let email = friend.email {
                                 Text(email)
                                     .font(.footnote)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.secondary)
                             }
                         }
                         Spacer()
@@ -49,7 +50,7 @@ struct FriendDetailView: View {
                     let epsilon = 0.01
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Balance with \(friend.name):")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                         if balance < -epsilon {
                             Text("You owe ₹\(String(format: "%.2f", abs(balance)))")
                                 .foregroundColor(.red)
@@ -60,7 +61,7 @@ struct FriendDetailView: View {
                                 .font(.title.bold())
                         } else {
                             Text("Settled")
-                                .foregroundColor(.gray)
+                                .foregroundColor(.secondary)
                                 .font(.title.bold())
                         }
                     }
@@ -70,18 +71,11 @@ struct FriendDetailView: View {
 
                     // Actions
                     HStack(spacing: 16) {
-                        Button(action: { showAddExpense = true }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add Expense")
-                            }
-                            .font(.system(size: 18, weight: .semibold))
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 24)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(16)
+                        // Use primary button style for Add Expense
+                        ChillPrimaryButton(title: "Add Expense", isDisabled: false) {
+                            showAddExpense = true
                         }
+                        // Custom settle up button only shown if balance is not zero
                         if abs(balance) > epsilon {
                             Button(action: {
                                 showSettleConfirmation = true
@@ -93,8 +87,8 @@ struct FriendDetailView: View {
                                 .font(.system(size: 18, weight: .semibold))
                                 .padding(.vertical, 12)
                                 .padding(.horizontal, 24)
-                                .background(Color(.systemGray5))
-                                .foregroundColor(.gray)
+                                .background(ChillTheme.card)
+                                .foregroundColor(ChillTheme.darkText)
                                 .cornerRadius(16)
                             }
                         }
@@ -104,11 +98,11 @@ struct FriendDetailView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Expenses with \(friend.name)")
                             .font(.title3).bold()
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
 
                         if allExpenses.isEmpty {
                             Text("No expenses yet.")
-                                .foregroundColor(.gray)
+                                .foregroundColor(.secondary)
                                 .padding(.vertical)
                         } else {
                             ForEach(allExpenses) { expense in

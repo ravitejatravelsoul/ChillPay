@@ -20,30 +20,30 @@ final class FriendsViewModel: ObservableObject {
     // Published properties that trigger view refreshes
     @Published var friends: [User] = []
     @Published var pendingInvites: [Invite] = []
+
+    // ✅ Shared + real-time direct expenses (from /directExpenses)
     @Published var directExpenses: [Expense] = [] {
         didSet {
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
+            DispatchQueue.main.async { self.objectWillChange.send() }
         }
     }
+
+    // Group expenses are injected from GroupViewModel.syncWithGroups(...)
     @Published var groupExpenses: [Expense] = [] {
         didSet {
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
+            DispatchQueue.main.async { self.objectWillChange.send() }
         }
     }
+
     @Published var didUpdateExpenses: Bool = false
     @Published var lastSettlement: SettlementResult?
+
     @Published var currentUser: User? {
         didSet {
             print("DEBUG: [FriendsVM] currentUser didSet:", String(describing: currentUser))
             fetchFriends()
-            loadDirectExpensesFromFirestore()
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
+            startListeningToDirectExpenses() // ✅ main fix
+            DispatchQueue.main.async { self.objectWillChange.send() }
         }
     }
 
@@ -51,11 +51,15 @@ final class FriendsViewModel: ObservableObject {
     private var deletedFriendIds: Set<String> = []
     private let db = Firestore.firestore()
 
+    // ✅ Listener handle
+    private var directExpensesListener: ListenerRegistration?
+
     // MARK: - Sync with Groups
     func syncWithGroups(_ groups: [Group]) {
         let allUsers = Set(groups.flatMap { $0.members })
         let allGroupExpenses = groups.flatMap { $0.expenses }
         let directUsers = Set(directExpenses.flatMap { $0.participants })
+
         let filteredUsers = allUsers.union(directUsers)
             .filter { !deletedFriendIds.contains($0.id) && $0.id != currentUser?.id }
 
@@ -64,6 +68,77 @@ final class FriendsViewModel: ObservableObject {
             self.groupExpenses = allGroupExpenses
             self.objectWillChange.send()
         }
+    }
+
+    // MARK: - ✅ REALTIME: Direct Expenses Listener (Shared Collection)
+    private func startListeningToDirectExpenses() {
+        directExpensesListener?.remove()
+        directExpensesListener = nil
+
+        guard let currentUser else { return }
+
+        directExpensesListener = db.collection("directExpenses")
+            .whereField("participantIds", arrayContains: currentUser.id)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self else { return }
+
+                if let error = error {
+                    print("❌ [FriendsVM] directExpenses listener error:", error.localizedDescription)
+                    return
+                }
+
+                guard let docs = snapshot?.documents else {
+                    DispatchQueue.main.async {
+                        self.directExpenses = []
+                        self.didUpdateExpenses.toggle()
+                        self.objectWillChange.send()
+                    }
+                    return
+                }
+
+                var updated: [Expense] = []
+                for doc in docs {
+                    var data = doc.data()
+                    // Ensure id exists even if model expects it
+                    if data["id"] == nil {
+                        data["id"] = doc.documentID
+                    }
+                    if let exp = Expense.fromDict(data) {
+                        updated.append(exp)
+                    }
+                }
+
+                // Sort newest first
+                updated.sort { $0.date > $1.date }
+
+                DispatchQueue.main.async {
+                    self.directExpenses = updated
+                    self.didUpdateExpenses.toggle()
+                    self.refreshFriends()
+                    self.objectWillChange.send()
+                }
+            }
+    }
+
+    private func directExpenseDocId(for expense: Expense) -> String {
+        // Your Expense.id is UUID in your code
+        return expense.id.uuidString
+    }
+
+    private func upsertDirectExpense(_ expense: Expense) {
+        let docId = directExpenseDocId(for: expense)
+        var data = expense.toDict()
+
+        // Force the shared fields to exist exactly as your Firestore screenshot shows
+        data["id"] = docId
+        data["participantIds"] = expense.participants.map { $0.id }
+
+        db.collection("directExpenses").document(docId).setData(data, merge: true)
+    }
+
+    private func deleteDirectExpense(_ expense: Expense) {
+        let docId = directExpenseDocId(for: expense)
+        db.collection("directExpenses").document(docId).delete()
     }
 
     // MARK: - Add Friend or Send Invite
@@ -109,8 +184,6 @@ final class FriendsViewModel: ObservableObject {
 
         friendRef.getDocument { doc, _ in
             if let doc = doc, let data = doc.data() {
-
-                // ⬇️ include avatar metadata
                 let user = User(
                     id: friendId,
                     name: data["name"] as? String ?? friendEmail,
@@ -153,6 +226,7 @@ final class FriendsViewModel: ObservableObject {
         let userRef = db.collection("users").document(currentUser.id)
         userRef.getDocument { doc, _ in
             let directUsers = Set(self.directExpenses.flatMap { $0.participants })
+
             guard let doc = doc,
                   let data = doc.data(),
                   let friendIds = data["friends"] as? [String],
@@ -178,7 +252,6 @@ final class FriendsViewModel: ObservableObject {
             self.db.collection("users").whereField(FieldPath.documentID(), in: validIds).getDocuments { snapshot, _ in
                 guard let docs = snapshot?.documents else { return }
 
-                // ⬇️ include avatar metadata when building User objects
                 let users = docs.map {
                     let d = $0.data()
                     return User(
@@ -193,36 +266,11 @@ final class FriendsViewModel: ObservableObject {
 
                 let combined = Set(users).union(directUsers)
                     .filter { $0.id != currentUser.id && !self.deletedFriendIds.contains($0.id) }
+
                 DispatchQueue.main.async {
                     self.friends = Array(combined).sorted { $0.name < $1.name }
                     self.objectWillChange.send()
                 }
-            }
-        }
-    }
-
-    // MARK: - Direct Expense Persistence
-    func saveDirectExpensesToFirestore() {
-        guard let currentUser else { return }
-        let data = directExpenses.map { $0.toDict() }
-        db.collection("users").document(currentUser.id)
-            .setData(["directExpenses": data], merge: true)
-    }
-
-    func loadDirectExpensesFromFirestore(completion: @escaping () -> Void = {}) {
-        guard let currentUser else { completion(); return }
-        db.collection("users").document(currentUser.id).getDocument { doc, _ in
-            guard let data = doc?.data(),
-                  let arr = data["directExpenses"] as? [[String: Any]] else {
-                DispatchQueue.main.async { completion() }
-                return
-            }
-            let expenses = arr.compactMap { Expense.fromDict($0) }
-            DispatchQueue.main.async {
-                self.directExpenses = expenses
-                self.didUpdateExpenses.toggle()
-                self.objectWillChange.send()
-                completion()
             }
         }
     }
@@ -256,24 +304,23 @@ final class FriendsViewModel: ObservableObject {
         let message: String
     }
 
-    /// Updated: ensure all expenses, even old ones, are always cleared if both users are participants
+    /// Clears all direct expenses between me and friend (shared Firestore docs)
     func clearExpensesWith(friend: User, method: SettleMethod, note: String? = nil) {
         guard let me = currentUser else { return }
-        let beforeCount = directExpenses.count
+
         let toClear = directExpenses.filter { exp in
             let ids = exp.participants.map { $0.id }
-            // Backward compatible: check both current and friend in participants, ignore other fields
             return ids.contains(me.id) && ids.contains(friend.id)
         }
-        print("DEBUG: Will clear \(toClear.count) expenses for settlement. Titles: \(toClear.map { $0.title })")
-        directExpenses.removeAll { exp in
-            let ids = exp.participants.map { $0.id }
-            return ids.contains(me.id) && ids.contains(friend.id)
+
+        print("DEBUG: Will clear \(toClear.count) shared directExpenses docs")
+
+        // Delete docs in Firestore
+        for exp in toClear {
+            deleteDirectExpense(exp)
         }
-        let afterCount = directExpenses.count
-        print("DEBUG: Cleared \(beforeCount - afterCount) expenses for \(friend.name). Remaining: \(afterCount)")
+
         didUpdateExpenses.toggle()
-        saveDirectExpensesToFirestore()
         refreshFriends()
         lastSettlement = SettlementResult(
             friend: friend,
@@ -283,14 +330,11 @@ final class FriendsViewModel: ObservableObject {
         )
         objectWillChange.send()
 
-        // Push notification to friend for expense clear/settle up
-        if let me = currentUser {
-            NotificationManager.shared.sendPushNotification(
-                to: friend,
-                title: "Expenses Cleared",
-                body: "\(me.name) settled up with you!"
-            )
-        }
+        NotificationManager.shared.sendPushNotification(
+            to: friend,
+            title: "Expenses Cleared",
+            body: "\(me.name) settled up with you!"
+        )
     }
 
     func isSettledWith(friend: User) -> Bool {
@@ -305,6 +349,7 @@ final class FriendsViewModel: ObservableObject {
             .updateData(["friends": FieldValue.arrayRemove([fid])])
         db.collection("users").document(fid)
             .updateData(["friends": FieldValue.arrayRemove([myId])])
+
         deletedFriendIds.insert(fid)
         DispatchQueue.main.async {
             self.friends.removeAll { $0.id == fid }
@@ -323,9 +368,7 @@ final class FriendsViewModel: ObservableObject {
             .filter { !deletedFriendIds.contains($0.id) && $0.id != currentUser?.id }
             .sorted { $0.name < $1.name }
 
-        DispatchQueue.main.async {
-            self.objectWillChange.send()
-        }
+        DispatchQueue.main.async { self.objectWillChange.send() }
     }
 
     // MARK: - Sorting
@@ -335,9 +378,7 @@ final class FriendsViewModel: ObservableObject {
         } else {
             friends.sort { $0.name.lowercased() < $1.name.lowercased() }
         }
-        DispatchQueue.main.async {
-            self.objectWillChange.send()
-        }
+        DispatchQueue.main.async { self.objectWillChange.send() }
     }
 
     // MARK: - History
@@ -347,9 +388,11 @@ final class FriendsViewModel: ObservableObject {
             .filter { $0.participants.contains(where: { $0.id == friend.id }) }
             .map {
                 let who = $0.paidBy.id == me.id ? "You" : $0.paidBy.name
-                return ActivityEntry(id: $0.id,
-                                     text: "\(who) paid \($0.participants.map { $0.name }.joined(separator: ", ")) ₹\(String(format: "%.2f", $0.amount)) for \($0.title)",
-                                     date: $0.date)
+                return ActivityEntry(
+                    id: $0.id,
+                    text: "\(who) paid \($0.participants.map { $0.name }.joined(separator: ", ")) ₹\(String(format: "%.2f", $0.amount)) for \($0.title)",
+                    date: $0.date
+                )
             }
         return entries.sorted { $0.date > $1.date }
     }
@@ -367,9 +410,10 @@ final class FriendsViewModel: ObservableObject {
         return (direct + group).sorted { $0.date > $1.date }
     }
 
-    // MARK: - Add/Edit Expense
+    // MARK: - ✅ Add/Edit Direct Expense (now shared Firestore docs)
     func addDirectExpense(to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
         guard let me = currentUser else { return }
+
         let meObj = friends.first(where: { $0.id == me.id }) ?? me
         let frObj = friends.first(where: { $0.id == friend.id }) ?? friend
 
@@ -385,47 +429,35 @@ final class FriendsViewModel: ObservableObject {
             groupID: nil
         )
 
-        directExpenses.append(expense)
-        didUpdateExpenses.toggle()
-        saveDirectExpensesToFirestore()
-        refreshFriends()
-        objectWillChange.send()
+        // Write shared doc — listener will update both phones
+        upsertDirectExpense(expense)
 
-        // Push notification to friend on expense add
-        if let me = currentUser {
-            NotificationManager.shared.sendPushNotification(
-                to: friend,
-                title: "Expense Added",
-                body: "\(me.name) added \"\(description)\" for ₹\(amount) with you."
-            )
-        }
+        NotificationManager.shared.sendPushNotification(
+            to: friend,
+            title: "Expense Added",
+            body: "\(me.name) added \"\(description)\" for ₹\(amount) with you."
+        )
     }
 
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
         guard let me = currentUser else { return }
-        if let idx = directExpenses.firstIndex(where: { $0.id == expense.id }) {
-            let meObj = friends.first(where: { $0.id == me.id }) ?? me
-            let frObj = friends.first(where: { $0.id == friend.id }) ?? friend
 
-            directExpenses[idx].title = description
-            directExpenses[idx].amount = amount
-            directExpenses[idx].paidBy = paidByMe ? meObj : frObj
-            directExpenses[idx].date = date
+        let meObj = friends.first(where: { $0.id == me.id }) ?? me
+        let frObj = friends.first(where: { $0.id == friend.id }) ?? friend
 
-            didUpdateExpenses.toggle()
-            saveDirectExpensesToFirestore()
-            refreshFriends()
-            objectWillChange.send()
+        var updated = expense
+        updated.title = description
+        updated.amount = amount
+        updated.paidBy = paidByMe ? meObj : frObj
+        updated.date = date
 
-            // Push notification to friend on expense edit
-            if let me = currentUser {
-                NotificationManager.shared.sendPushNotification(
-                    to: friend,
-                    title: "Expense Edited",
-                    body: "\(me.name) edited \"\(description)\" for ₹\(amount) with you."
-                )
-            }
-        }
+        upsertDirectExpense(updated)
+
+        NotificationManager.shared.sendPushNotification(
+            to: friend,
+            title: "Expense Edited",
+            body: "\(me.name) edited \"\(description)\" for ₹\(amount) with you."
+        )
     }
 
     func settleUpWith(friend: User, method: SettleMethod = .other, note: String? = nil) {

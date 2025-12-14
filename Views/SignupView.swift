@@ -28,7 +28,7 @@ struct SignupView: View {
                     Spacer(minLength: 32)
                     Text("Sign Up")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
 
                     VStack(spacing: 14) {
                         ChillTextField(title: "Name", text: $name)
@@ -37,9 +37,9 @@ struct SignupView: View {
                         ChillTextField(title: "Bio (optional)", text: $bio)
                         ChillTextField(title: "Password", text: $password, isSecure: true)
                         Toggle("Enable notifications", isOn: $notificationsEnabled)
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                         Toggle("Enable Face ID", isOn: $faceIDEnabled)
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                         if let errorMessage = errorMessage {
                             Text(errorMessage)
                                 .foregroundColor(.red)
@@ -50,7 +50,7 @@ struct SignupView: View {
                     VStack(spacing: 8) {
                         Text("Pick Your Avatar")
                             .font(.headline)
-                            .foregroundColor(.white.opacity(0.85))
+                            .foregroundColor(ChillTheme.darkText.opacity(0.85))
                         AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                     }
                     .padding(.horizontal, 8)
@@ -107,7 +107,8 @@ struct SignupView: View {
             .onAppear { subscribeToKeyboardNotifications() }
             .onDisappear { unsubscribeFromKeyboardNotifications() }
         }
-        .preferredColorScheme(.dark)
+        // Always prefer the system colour scheme; default to light mode
+        .preferredColorScheme(.light)
     }
 
     // MARK: Keyboard Handling

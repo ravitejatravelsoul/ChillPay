@@ -11,6 +11,10 @@ struct ProfileView: View {
     @State private var notificationsEnabled: Bool = AuthService.shared.user?.notificationsEnabled ?? true
     @State private var faceIDEnabled: Bool = AuthService.shared.user?.faceIDEnabled ?? false
 
+    /// Flag stored in user defaults to track if the onboarding has been displayed.  Exposed here to allow
+    /// users to re-show the onboarding from the Profile tab.
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = true
+
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
@@ -41,21 +45,21 @@ struct ProfileView: View {
                         Text(profile.name)
                             .font(.title)
                             .bold()
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
 
                         Text(profile.email)
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(ChillTheme.darkText.opacity(0.6))
 
                         if let phone = profile.phone, !phone.isEmpty {
                             Text("Phone: \(phone)")
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
                                 .font(.subheadline)
                         }
 
                         if let bio = profile.bio, !bio.isEmpty {
                             Text(bio)
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.7))
                                 .font(.footnote)
                                 .italic()
                                 .padding(.top, 4)
@@ -64,7 +68,7 @@ struct ProfileView: View {
                     .padding()
                     .background(ChillTheme.card)
                     .cornerRadius(24)
-                    .shadow(radius: 12)
+                    .shadow(color: ChillTheme.lightShadow, radius: 12, x: 0, y: 2)
                     .padding(.horizontal, 16)
 
                 } else {
@@ -78,7 +82,7 @@ struct ProfileView: View {
 
                     Button(action: { showEditProfile = true }) {
                         HStack {
-                            Image(systemName: "pencil.circle").foregroundColor(.white)
+                            Image(systemName: "pencil.circle")
                             Text("Edit Profile")
                         }
                         .font(.headline)
@@ -94,7 +98,8 @@ struct ProfileView: View {
                     }
 
                     Toggle(isOn: $notificationsEnabled) {
-                        Label("Enable Notifications", systemImage: "bell").foregroundColor(.white)
+                        Label("Enable Notifications", systemImage: "bell")
+                            .foregroundColor(ChillTheme.darkText)
                     }
                     .padding(.horizontal, 32)
                     .onChange(of: notificationsEnabled) { _, newValue in
@@ -102,7 +107,8 @@ struct ProfileView: View {
                     }
 
                     Toggle(isOn: $faceIDEnabled) {
-                        Label("Use Face ID", systemImage: "faceid").foregroundColor(.white)
+                        Label("Use Face ID", systemImage: "faceid")
+                            .foregroundColor(ChillTheme.darkText)
                     }
                     .padding(.horizontal, 32)
                     .onChange(of: faceIDEnabled) { _, newValue in
@@ -111,7 +117,7 @@ struct ProfileView: View {
 
                     Button(action: { showPaymentsSheet = true }) {
                         HStack {
-                            Image(systemName: "creditcard").foregroundColor(.white)
+                            Image(systemName: "creditcard")
                             Text("Payments")
                         }
                         .font(.headline)
@@ -141,7 +147,7 @@ struct ProfileView: View {
 
                     Button(action: { showContactSheet = true }) {
                         HStack {
-                            Image(systemName: "envelope").foregroundColor(.white)
+                            Image(systemName: "envelope")
                             Text("Contact Us")
                         }
                         .font(.headline)
@@ -172,13 +178,12 @@ struct ProfileView: View {
                     Button(action: { showLogoutSheet = true }) {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .foregroundColor(.red)
                             Text("Logout")
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(.white)
+                        .background(ChillTheme.card)
                         .foregroundColor(.red)
                         .cornerRadius(16)
                     }
@@ -191,6 +196,24 @@ struct ProfileView: View {
                     } message: {
                         Text("Are you sure you want to log out?")
                     }
+
+                    // Button to allow the user to view onboarding again
+                    Button(action: {
+                        // Reset the onboarding flag – ContentView will show onboarding on next appearance
+                        hasSeenOnboarding = false
+                    }) {
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                            Text("Show Onboarding Again")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(ChillTheme.card)
+                        .foregroundColor(ChillTheme.accent)
+                        .cornerRadius(16)
+                    }
+                    .padding(.horizontal, 32)
                 }
 
                 Spacer().frame(height: 40)
@@ -204,6 +227,6 @@ struct ProfileView: View {
             notificationsEnabled = authService.user?.notificationsEnabled ?? true
             faceIDEnabled = authService.user?.faceIDEnabled ?? false
         }
-        .preferredColorScheme(.dark)
+        // Do not force dark mode; rely on system appearance
     }
 }

@@ -131,11 +131,24 @@ class AuthService: ObservableObject {
                 onLoginProgress?("No user returned.")
                 return
             }
-            DispatchQueue.main.async {
-                self.isAuthenticated = true
-                self.isEmailVerified = firebaseUser.isEmailVerified
+            // ⬇️ Refresh the Firebase user to get the latest emailVerified status
+            firebaseUser.reload { [weak self] reloadError in
+                guard let self = self else { return }
+                if let reloadError = reloadError {
+                    print("Failed to reload user: \(reloadError.localizedDescription)")
+                }
+                // Update authentication flags based on refreshed user
+                DispatchQueue.main.async {
+                    self.isAuthenticated = true
+                    self.isEmailVerified = firebaseUser.isEmailVerified
+                }
+                // If the email is verified now, update the Firestore user doc to persist this
+                if firebaseUser.isEmailVerified {
+                    self.db.collection("users").document(firebaseUser.uid).updateData(["emailVerified": true])
+                }
+                // Fetch user document from Firestore (will propagate into user profile & friends)
+                self.tryFetchUserDocumentWithRetry(uid: firebaseUser.uid, attempts: 5, delay: 0.4, onLoginProgress: onLoginProgress)
             }
-            self.tryFetchUserDocumentWithRetry(uid: firebaseUser.uid, attempts: 5, delay: 0.4, onLoginProgress: onLoginProgress)
         }
     }
 

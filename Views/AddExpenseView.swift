@@ -71,17 +71,17 @@ struct AddExpenseView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                     .padding(.bottom, 8)
                 VStack(alignment: .leading, spacing: 16) {
                     // Title
                     Text("Title")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     ZStack(alignment: .leading) {
                         if title.isEmpty {
                             Text("Enter title")
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                 .padding(.leading, 18)
                         }
                         TextField("", text: $title)
@@ -92,11 +92,11 @@ struct AddExpenseView: View {
                     // Amount
                     Text("Amount (\(group.currency.symbol))")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     ZStack(alignment: .leading) {
                         if amountString.isEmpty {
                             Text("Enter amount")
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                 .padding(.leading, 18)
                         }
                         TextField("", text: $amountString)
@@ -108,8 +108,8 @@ struct AddExpenseView: View {
                     // Paid By
                     Text("Paid By")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    Picker(selection: $paidBy, label: Text("Select Payer").foregroundColor(.white)) {
+                        .foregroundColor(ChillTheme.darkText)
+                    Picker(selection: $paidBy, label: Text("Select Payer").foregroundColor(ChillTheme.darkText)) {
                         if let currentUser = FriendsViewModel.shared.currentUser {
                             Text("Me (\(currentUser.name))").tag(Optional(currentUser))
                         }
@@ -126,8 +126,8 @@ struct AddExpenseView: View {
                     // Category
                     Text("Category")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
+                        .foregroundColor(ChillTheme.darkText)
+                    Picker(selection: $category, label: Text("Select Category").foregroundColor(ChillTheme.darkText)) {
                         ForEach(ExpenseCategory.allCases, id: \.self) { cat in
                             Text("\(cat.emoji) \(cat.displayName)").tag(cat)
                         }
@@ -139,28 +139,27 @@ struct AddExpenseView: View {
                     // Date
                     Text("Date Paid")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
                         .datePickerStyle(CompactDatePickerStyle())
-                        .accentColor(.green)
+                        .accentColor(ChillTheme.accent)
                         .padding(.vertical, 2)
-                        .colorScheme(.dark)
                         .onTapGesture { dismissKeyboard() }
 
                     // Recurring
                     Toggle(isOn: $isRecurring) {
                         Text("Recurring Expense")
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                             .font(.headline)
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                    .toggleStyle(SwitchToggleStyle(tint: ChillTheme.accent))
                     .padding(.vertical, 4)
                     .onTapGesture { dismissKeyboard() }
 
                     // Participants (as chips)
                     Text("Participants")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     ParticipantsWrapView(users: group.members, selectedParticipants: $selectedParticipants)
                         .onTapGesture { dismissKeyboard() }
 
@@ -171,23 +170,14 @@ struct AddExpenseView: View {
                             .padding(.top, 2)
                     }
 
-                    // Save Button
-                    Button(action: {
+                    // Save Button using primary style
+                    ChillPrimaryButton(
+                        title: expenseToEdit == nil ? "Save" : "Save",
+                        isDisabled: !canSave
+                    ) {
                         dismissKeyboard()
                         save()
-                    }) {
-                        HStack {
-                            Spacer()
-                            Text("Save")
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(canSave ? Color.green : Color.gray)
-                        .cornerRadius(14)
                     }
-                    .disabled(!canSave)
                 }
             }
             .padding()

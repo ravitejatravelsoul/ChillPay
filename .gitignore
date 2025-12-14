@@ -1,0 +1,11 @@
+.DS_Store
+**/.DS_Store
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+
+# Derived data
+DerivedData/
+.build/

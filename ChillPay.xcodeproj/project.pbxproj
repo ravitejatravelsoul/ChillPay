@@ -20,6 +20,7 @@
 		3A11D7232E740163004949B6 /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70C2E73FE26004949B6 /* Expense.swift */; };
 		3A11D7242E74016C004949B6 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D70D2E73FE3B004949B6 /* Group.swift */; };
 		3A11D7262E740373004949B6 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A11D7252E740373004949B6 /* StorageManager.swift */; };
+		3A5F94E02EEE2AE500AD6189 /* ChillPrimaryButton 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */; };
 		3A5FB0F82ECACFAA0066D90A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */; };
 		3A80FCD62E8849400093D65A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD52E8849400093D65A /* MainTabView.swift */; };
 		3A80FCD82E88494B0093D65A /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A80FCD72E88494B0093D65A /* FriendsView.swift */; };
@@ -109,6 +110,7 @@
 		3A11D7162E73FEEC004949B6 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		3A11D7172E73FF03004949B6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		3A11D7252E740373004949B6 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChillPrimaryButton 2.swift"; sourceTree = "<group>"; };
 		3A5FB0F72ECACFAA0066D90A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3A80FCD52E8849400093D65A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3A80FCD72E88494B0093D65A /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
@@ -268,6 +270,7 @@
 		3A11D7072E73FD90004949B6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A5F94DF2EEE2AE500AD6189 /* ChillPrimaryButton 2.swift */,
 				3AE3D7972EBEFFB000F06448 /* TabBarButton.swift */,
 				3AE3D7952EBDA2E900F06448 /* AvatarPickerView.swift */,
 				3A80FD3C2EAD2EBB0093D65A /* CelebrationPopup.swift */,
@@ -497,6 +500,7 @@
 				3A80FCDA2E8849570093D65A /* GroupsView.swift in Sources */,
 				3A11D7182E740104004949B6 /* ContentView.swift in Sources */,
 				3A80FD0B2E8CE2340093D65A /* UserProfile.swift in Sources */,
+				3A5F94E02EEE2AE500AD6189 /* ChillPrimaryButton 2.swift in Sources */,
 				3AD5E5862E7E6A1500FAE979 /* Adjustment.swift in Sources */,
 				3A80FCFE2E8B5B7C0093D65A /* CustomTabBar.swift in Sources */,
 				3A80FCE82E888E1F0093D65A /* FriendDetailView.swift in Sources */,

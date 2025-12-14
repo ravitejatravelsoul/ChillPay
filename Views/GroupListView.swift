@@ -13,13 +13,13 @@ struct GroupListView: View {
                 HStack {
                     Text("Groups")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     Spacer()
                     Button(action: { showingAddGroup = true }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color.green)
-                            .shadow(color: Color.green.opacity(0.18), radius: 6, x: 0, y: 3)
+                            .foregroundColor(ChillTheme.accent)
+                            .shadow(color: ChillTheme.accent.opacity(0.18), radius: 6, x: 0, y: 3)
                     }
                     .accessibilityLabel("Add Group")
                 }
@@ -32,20 +32,26 @@ struct GroupListView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "person.3.fill")
                             .font(.system(size: 56))
-                            .foregroundColor(.white.opacity(0.15))
+                            .foregroundColor(ChillTheme.softGray)
                         Text("No groups yet")
                             .font(.title2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(ChillTheme.darkText.opacity(0.7))
                         Text("Tap the + button to create your first group.")
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(ChillTheme.darkText.opacity(0.5))
                     }
                     Spacer()
                 } else {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 20) {
                             ForEach(groupVM.groups) { group in
-                                NavigationLink(destination: GroupDetailView(groupVM: groupVM, friendsVM: friendsVM, group: group)) {
+                                NavigationLink(
+                                    destination: GroupDetailView(
+                                        groupVM: groupVM,
+                                        friendsVM: friendsVM,
+                                        group: group
+                                    )
+                                ) {
                                     GroupCardView(group: group)
                                         .padding(.horizontal, 8)
                                 }
@@ -63,6 +69,18 @@ struct GroupListView: View {
         // --- Sync hooks for cross-tab updates ---
         .onReceive(groupVM.$groups) { _ in }
         .onReceive(friendsVM.$didUpdateExpenses) { _ in }
+        // Display loading spinner overlay if groups are loading
+        .overlay(
+            ZStack {
+                if groupVM.isLoadingGroups {
+                    // Dim background a bit while loading
+                    Color.black.opacity(0.15)
+                        .ignoresSafeArea()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: ChillTheme.accent))
+                }
+            }
+        )
     }
 }
 
@@ -73,7 +91,7 @@ struct GroupCardView: View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(Color(group.colorName))
+                    .fill(color(for: group.colorName))
                     .frame(width: 48, height: 48)
                 Image(systemName: group.iconName)
                     .font(.system(size: 26, weight: .bold))
@@ -82,22 +100,20 @@ struct GroupCardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(group.name)
                     .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 Text("\(group.members.count) member\(group.members.count == 1 ? "" : "s")")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(ChillTheme.darkText.opacity(0.7))
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .foregroundColor(.white.opacity(0.28))
+                .foregroundColor(ChillTheme.darkText.opacity(0.28))
                 .font(.system(size: 22, weight: .medium))
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 18)
-        .background(
-            Color(.sRGB, white: 0.14, opacity: 1)
-        )
+        .background(ChillTheme.card)
         .cornerRadius(22)
-        .shadow(color: Color.black.opacity(0.11), radius: 8, x: 0, y: 3)
+        .shadow(color: ChillTheme.lightShadow, radius: 8, x: 0, y: 3)
     }
 }

@@ -77,7 +77,7 @@ struct GlobalAnalyticsView: View {
                     // Header
                     Text("Global Analytics")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                         .padding(.top, 20)
                         .padding(.bottom, 8)
 
@@ -97,11 +97,15 @@ struct GlobalAnalyticsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Summary")
                             .font(.headline)
-                            .foregroundColor(.white)
-                        Text("Total spent: \(currencySymbol)\(String(format: "%.2f", totalSpent))").foregroundColor(.white)
-                        Text("Total expenses: \(combinedExpenses.count)").foregroundColor(.white)
-                        Text("Unique members: \(allUsers.count)").foregroundColor(.white)
-                        Text("Average per member: \(currencySymbol)\(String(format: "%.2f", averagePerMember))").foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
+                        Text("Total spent: \(currencySymbol)\(String(format: "%.2f", totalSpent))")
+                            .foregroundColor(ChillTheme.darkText)
+                        Text("Total expenses: \(combinedExpenses.count)")
+                            .foregroundColor(ChillTheme.darkText)
+                        Text("Unique members: \(allUsers.count)")
+                            .foregroundColor(ChillTheme.darkText)
+                        Text("Average per member: \(currencySymbol)\(String(format: "%.2f", averagePerMember))")
+                            .foregroundColor(ChillTheme.darkText)
                     }
                     .padding()
                     .background(ChillTheme.card)
@@ -112,15 +116,28 @@ struct GlobalAnalyticsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("By Category")
                                 .font(.headline)
-                                .foregroundColor(.white)
+                                .foregroundColor(ChillTheme.darkText)
                             Chart(categoryTotals) { item in
                                 BarMark(
                                     x: .value("Category", item.category.displayName),
                                     y: .value("Amount", item.total)
                                 )
-                                .foregroundStyle(Color.blue)
+                                .foregroundStyle(ChillTheme.accent)
                             }
                             .frame(height: 200)
+                        }
+                        .padding()
+                        .background(ChillTheme.card)
+                        .cornerRadius(20)
+                    } else {
+                        // Empty state for category totals
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("By Category")
+                                .font(.headline)
+                                .foregroundColor(ChillTheme.darkText)
+                            Text("Not enough data yet – start adding expenses to see category insights.")
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                                .frame(maxWidth: .infinity, minHeight: 80)
                         }
                         .padding()
                         .background(ChillTheme.card)
@@ -132,15 +149,27 @@ struct GlobalAnalyticsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("By Payer")
                                 .font(.headline)
-                                .foregroundColor(.white)
+                                .foregroundColor(ChillTheme.darkText)
                             Chart(memberTotals) { item in
                                 BarMark(
                                     x: .value("Member", item.user.name),
                                     y: .value("Amount", item.total)
                                 )
-                                .foregroundStyle(Color.green)
+                                .foregroundStyle(ChillTheme.accent)
                             }
                             .frame(height: 200)
+                        }
+                        .padding()
+                        .background(ChillTheme.card)
+                        .cornerRadius(20)
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("By Payer")
+                                .font(.headline)
+                                .foregroundColor(ChillTheme.darkText)
+                            Text("Not enough data yet – start adding expenses to see payer insights.")
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                                .frame(maxWidth: .infinity, minHeight: 80)
                         }
                         .padding()
                         .background(ChillTheme.card)
@@ -156,7 +185,7 @@ struct GlobalAnalyticsView: View {
             recomputeAnalytics()
             setupReactiveRefresh()
         }
-        .preferredColorScheme(.dark)
+        // Do not force dark mode – use system appearance instead
     }
 
     // MARK: - Logic

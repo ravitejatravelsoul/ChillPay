@@ -24,12 +24,12 @@ struct TabBarButton: View {
                     AvatarView(user: lightweight)
                         .frame(width: 30, height: 30)
                         .overlay(
-                            Circle().stroke(selectedTab == .profile ? Color.green : Color(.systemGray), lineWidth: 2)
+                            Circle().stroke(selectedTab == .profile ? ChillTheme.accent : Color(.systemGray), lineWidth: 2)
                         )
                 } else {
                     Image(systemName: icon)
                         .font(.system(size: 26, weight: .medium))
-                        .foregroundColor(selectedTab == tab ? Color.green : Color(.systemGray))
+                        .foregroundColor(selectedTab == tab ? ChillTheme.accent : Color(.systemGray))
                 }
             }
             .frame(maxWidth: .infinity)

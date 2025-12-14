@@ -12,10 +12,10 @@ struct ProfileSetupView: View {
                 VStack(spacing: 10) {
                     Text("Set Up Your Profile")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     Text("Choose a name and pick your avatar to get started.")
                         .font(.headline)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.7))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -25,7 +25,7 @@ struct ProfileSetupView: View {
 
                     Text("Pick Your Avatar")
                         .font(.headline)
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(ChillTheme.darkText.opacity(0.85))
 
                     EmojiAvatarPicker(selectedAvatar: $selectedAvatar)
                         .padding(.horizontal, 4)
@@ -54,6 +54,6 @@ struct ProfileSetupView: View {
                 Spacer()
             }
         }
-        .preferredColorScheme(.dark)
+        // Do not force dark mode; rely on system appearance
     }
 }

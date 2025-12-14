@@ -12,9 +12,10 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
+            // Header for the login screen.  Use the theme's header font and dark text colour for visibility
             Text("Login")
                 .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(ChillTheme.darkText)
 
             VStack(spacing: 18) {
                 ChillTextField(title: "Email", text: $email)
@@ -85,13 +86,13 @@ struct LoginView: View {
                     errorMessage = "Password reset email sent (if account exists)."
                 }
             }
-            .foregroundColor(.green)
+            .foregroundColor(ChillTheme.accent)
 
             HStack {
                 Text("Don't have an account?")
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(ChillTheme.darkText.opacity(0.7))
                 Button("Sign Up") { onSignup() }
-                    .foregroundColor(.green)
+                    .foregroundColor(ChillTheme.accent)
             }
             Spacer()
         }

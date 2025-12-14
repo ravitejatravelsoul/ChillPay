@@ -4,83 +4,144 @@ import FirebaseAuth
 struct EmailVerificationView: View {
     var onVerified: () -> Void
     var onLogout: () -> Void
+
     @State private var sent = false
     @State private var errorMessage: String?
     @State private var canResend = true
     @State private var cooldownSeconds = 60
+    @State private var remainingSeconds = 0
 
     var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            Text("Verify Your Email")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.white)
-            Text("We've sent a verification link to your email. Please check your inbox (and spam folder).")
-                .font(.title3)
-                .foregroundColor(.white.opacity(0.8))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+        ZStack {
+            ChillTheme.background.ignoresSafeArea()
 
-            if let errorMessage = errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-            } else if sent {
-                Text("Verification email sent!")
-                    .foregroundColor(.green)
-            }
+            VStack(spacing: 24) {
+                Spacer()
 
-            Button("Resend Verification Email") {
-                errorMessage = nil
-                if let user = Auth.auth().currentUser, canResend {
-                    user.sendEmailVerification { error in
-                        if let error = error {
-                            errorMessage = "Failed to send: \(error.localizedDescription)"
-                            sent = false
-                            // Allow another attempt after 10 seconds if blocked
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-                                canResend = true
-                            }
-                        } else {
-                            sent = true
-                            errorMessage = nil
-                            canResend = false
-                            // Cooldown before allowing another resend
-                            DispatchQueue.main.asyncAfter(deadline: .now() + Double(cooldownSeconds)) {
-                                canResend = true
-                            }
-                        }
+                VStack(spacing: 20) {
+                    Text("Verify Your Email")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(ChillTheme.darkText)
+
+                    Text("We’ve sent a verification link to your email. Please check your inbox (and spam folder).")
+                        .font(.title3)
+                        .foregroundColor(ChillTheme.darkText.opacity(0.8))
+                        .multilineTextAlignment(.center)
+
+                    if let errorMessage = errorMessage {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    } else if sent {
+                        Text("Verification email sent!")
+                            .foregroundColor(ChillTheme.accent)
+                            .fontWeight(.semibold)
+                    }
+
+                    ChillPrimaryButton(
+                        title: resendTitle,
+                        isDisabled: !canResend,
+                        systemImage: "envelope"
+                    ) {
+                        resendVerificationEmail()
+                    }
+
+                    ChillPrimaryButton(
+                        title: "I Verified My Email",
+                        isDisabled: false,
+                        systemImage: "checkmark.seal"
+                    ) {
+                        verifyNow()
+                    }
+
+                    Button(action: onLogout) {
+                        Text("Logout")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(ChillTheme.card)
+                            .foregroundColor(.red)
+                            .cornerRadius(14)
                     }
                 }
-            }
-            .font(.headline)
-            .padding()
-            .background(Color(.sRGB, white: 0.12, opacity: 1))
-            .foregroundColor(.white)
-            .cornerRadius(14)
-            .disabled(!canResend)
-            .opacity(canResend ? 1 : 0.5)
+                .padding()
+                .background(ChillTheme.card)
+                .cornerRadius(20)
+                .padding(.horizontal, 24)
+                .shadow(color: ChillTheme.lightShadow, radius: 8, x: 0, y: 2)
 
-            Button("I Verified My Email") {
-                errorMessage = nil
-                Auth.auth().currentUser?.reload(completion: { _ in
-                    if let user = Auth.auth().currentUser, user.isEmailVerified {
-                        onVerified()
-                    } else {
-                        errorMessage = "Still not verified. Please click the link in your email and try again."
-                    }
-                })
+                Spacer()
             }
-            .font(.headline)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.green)
-            .foregroundColor(.white)
-            .cornerRadius(14)
-
-            Button("Logout") { onLogout() }
-                .foregroundColor(.red)
-            Spacer()
         }
-        .background(ChillTheme.background.ignoresSafeArea())
+        // ✅ iOS 17+ onChange signature (two params)
+        .onChange(of: remainingSeconds) { _, newValue in
+            if newValue <= 0 {
+                canResend = true
+            }
+        }
+    }
+
+    private var resendTitle: String {
+        canResend ? "Resend Verification Email" : "Resend in \(remainingSeconds)s"
+    }
+
+    private func resendVerificationEmail() {
+        errorMessage = nil
+        sent = false
+
+        guard canResend else { return }
+        guard let user = Auth.auth().currentUser else {
+            errorMessage = "You’re not signed in. Please login again."
+            return
+        }
+
+        canResend = false
+        remainingSeconds = cooldownSeconds
+
+        user.sendEmailVerification { error in
+            if let error = error {
+                print("Resend verification error: \(error.localizedDescription)")
+                errorMessage = "We couldn’t resend the email. Please try again in a moment."
+                remainingSeconds = 10
+                startCountdown()
+            } else {
+                sent = true
+                errorMessage = nil
+                startCountdown()
+            }
+        }
+    }
+
+    private func startCountdown() {
+        guard remainingSeconds > 0 else {
+            canResend = true
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            remainingSeconds -= 1
+            if remainingSeconds > 0 {
+                startCountdown()
+            } else {
+                canResend = true
+            }
+        }
+    }
+
+    private func verifyNow() {
+        errorMessage = nil
+
+        Auth.auth().currentUser?.reload { _ in
+            guard let user = Auth.auth().currentUser else {
+                errorMessage = "You’re not signed in. Please login again."
+                return
+            }
+
+            if user.isEmailVerified {
+                onVerified()
+            } else {
+                errorMessage = "Still not verified. Please click the link in your email and try again."
+            }
+        }
     }
 }

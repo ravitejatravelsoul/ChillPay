@@ -31,17 +31,17 @@ struct AddGroupView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Create New Group")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                         .padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: 20) {
                         Text("Group Name")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                         ZStack(alignment: .leading) {
                             if name.isEmpty {
                                 Text("Enter name")
-                                    .foregroundColor(.white.opacity(0.5))
+                                    .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                     .padding(.leading, 18)
                             }
                             TextField("", text: $name)
@@ -50,7 +50,7 @@ struct AddGroupView: View {
 
                         Text("Members")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                         VStack(spacing: 8) {
                             ForEach(selectableMembers) { member in
                                 Button(action: {
@@ -64,11 +64,11 @@ struct AddGroupView: View {
                                         AvatarView(user: member)
                                             .frame(width: 30, height: 30)
                                         Text(member.id == FriendsViewModel.shared.currentUser?.id ? "Me" : member.name)
-                                            .foregroundColor(.white)
+                                            .foregroundColor(ChillTheme.darkText)
                                         Spacer()
                                         if selectedMembers.contains(member) {
                                             Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.green)
+                                                .foregroundColor(ChillTheme.accent)
                                         }
                                     }
                                     .padding(.vertical, 4)
@@ -79,18 +79,18 @@ struct AddGroupView: View {
 
                         Text("Settings")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                         VStack(alignment: .leading, spacing: 10) {
                             Toggle(isOn: $isPublic) {
                                 Text("Public Group")
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ChillTheme.darkText)
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: .green))
+                            .toggleStyle(SwitchToggleStyle(tint: ChillTheme.accent))
 
                             ZStack(alignment: .leading) {
                                 if budgetString.isEmpty {
                                     Text("Budget (optional)")
-                                        .foregroundColor(.white.opacity(0.5))
+                                        .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                         .padding(.leading, 18)
                                 }
                                 TextField("", text: $budgetString)
@@ -100,11 +100,11 @@ struct AddGroupView: View {
 
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Currency")
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ChillTheme.darkText)
                                 Picker("", selection: $selectedCurrency) {
                                     ForEach(Currency.allCases) { currency in
                                         Text("\(currency.displayName) (\(currency.symbol))")
-                                            .foregroundColor(.white)
+                                            .foregroundColor(ChillTheme.darkText)
                                             .tag(currency)
                                     }
                                 }
@@ -114,7 +114,7 @@ struct AddGroupView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Colour")
                                     .font(.subheadline)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ChillTheme.darkText)
                                 HStack {
                                     ForEach(["blue", "green", "orange", "red", "purple", "pink", "yellow", "teal"], id: \.self) { name in
                                         Circle()
@@ -122,7 +122,7 @@ struct AddGroupView: View {
                                             .frame(width: 28, height: 28)
                                             .overlay(
                                                 Circle()
-                                                    .stroke(selectedColorName == name ? Color.green : Color.clear, lineWidth: selectedColorName == name ? 2 : 1)
+                                                    .stroke(selectedColorName == name ? ChillTheme.accent : Color.clear, lineWidth: selectedColorName == name ? 2 : 1)
                                             )
                                             .onTapGesture {
                                                 selectedColorName = name
@@ -133,23 +133,23 @@ struct AddGroupView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Icon")
                                     .font(.subheadline)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ChillTheme.darkText)
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack {
                                         ForEach(["person.3.fill", "airplane", "car.fill", "cart.fill", "house.fill", "gift.fill", "fork.knife", "music.note.list", "briefcase.fill", "bag.fill"], id: \.self) { icon in
                                             ZStack {
                                                 RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(selectedIconName == icon ? Color.green : Color.gray.opacity(0.4), lineWidth: selectedIconName == icon ? 2.5 : 1)
+                                                    .stroke(selectedIconName == icon ? ChillTheme.accent : Color.gray.opacity(0.4), lineWidth: selectedIconName == icon ? 2.5 : 1)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 8)
-                                                            .fill(selectedIconName == icon ? Color.green.opacity(0.18) : Color.clear)
+                                                            .fill(selectedIconName == icon ? ChillTheme.accent.opacity(0.18) : Color.clear)
                                                     )
                                                     .frame(width: 40, height: 40)
                                                 Image(systemName: icon)
                                                     .resizable()
                                                     .aspectRatio(contentMode: .fit)
                                                     .frame(width: 24, height: 24)
-                                                    .foregroundColor(.white)
+                                                    .foregroundColor(ChillTheme.darkText)
                                             }
                                             .padding(2)
                                             .onTapGesture {
@@ -169,21 +169,9 @@ struct AddGroupView: View {
                             .padding(.top, 2)
                     }
 
-                    Button(action: {
+                    ChillPrimaryButton(title: "Save", isDisabled: isSaveDisabled) {
                         save()
-                    }) {
-                        HStack {
-                            Spacer()
-                            Text("Save")
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(isSaveDisabled ? ChillTheme.softGray.opacity(0.2) : ChillTheme.accent)
-                        .cornerRadius(14)
                     }
-                    .disabled(isSaveDisabled)
                 }
                 .padding()
                 .background(ChillTheme.card)

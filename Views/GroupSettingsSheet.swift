@@ -93,7 +93,7 @@ struct GroupSettingsSheet: View {
                             groupVM.removeMember(member, from: group)
                             group = groupVM.groups.first(where: { $0.id == group.id }) ?? group
                         } label: {
-                            Image(systemName: "minus.circle.fill")
+                            Image(systemName: "trash.circle.fill")
                                 .foregroundColor(.red)
                         }
                     }
@@ -128,8 +128,8 @@ struct GroupSettingsSheet: View {
                             Text(friend.name)
                                 .foregroundColor(.white)
                             Spacer()
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.green)
+                            Image(systemName: "person.badge.plus.fill")
+                                .foregroundColor(ChillTheme.accent)
                         }
                     }
                     .padding(.vertical, 2)

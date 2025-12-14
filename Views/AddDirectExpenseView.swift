@@ -67,18 +67,18 @@ struct AddDirectExpenseView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(expenseToEdit == nil ? "Add Expense" : "Edit Expense")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                     .padding(.bottom, 8)
 
                 VStack(alignment: .leading, spacing: 16) {
                     // Description
                     Text("Description")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     ZStack(alignment: .leading) {
                         if title.isEmpty {
                             Text("Enter description")
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                 .padding(.leading, 18)
                         }
                         TextField("", text: $title)
@@ -89,11 +89,11 @@ struct AddDirectExpenseView: View {
                     // Amount
                     Text("Amount")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     ZStack(alignment: .leading) {
                         if amountString.isEmpty {
                             Text("Enter amount")
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.5))
                                 .padding(.leading, 18)
                         }
                         TextField("", text: $amountString)
@@ -105,21 +105,21 @@ struct AddDirectExpenseView: View {
                     // Paid By (segmented look)
                     Text("Who Paid?")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     Picker("Who Paid?", selection: $paidByMe) {
                         Text("You").tag(true)
                         Text(friend.name).tag(false)
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .background(Color(.systemGray6))
+                    .background(ChillTheme.card)
                     .cornerRadius(12)
                     .padding(.vertical, 4)
 
                     // Category
                     Text("Category")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    Picker(selection: $category, label: Text("Select Category").foregroundColor(.white)) {
+                        .foregroundColor(ChillTheme.darkText)
+                    Picker(selection: $category, label: Text("Select Category").foregroundColor(ChillTheme.darkText)) {
                         ForEach(ExpenseCategory.allCases, id: \.self) { cat in
                             Text("\(cat.emoji) \(cat.displayName)").tag(cat)
                         }
@@ -130,20 +130,19 @@ struct AddDirectExpenseView: View {
                     // Date
                     Text("Date")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ChillTheme.darkText)
                     DatePicker("Expense Date", selection: $expenseDate, displayedComponents: .date)
                         .datePickerStyle(CompactDatePickerStyle())
-                        .accentColor(.green)
+                        .accentColor(ChillTheme.accent)
                         .padding(.vertical, 2)
-                        .colorScheme(.dark)
 
                     // Recurring
                     Toggle(isOn: $isRecurring) {
                         Text("Recurring Expense")
-                            .foregroundColor(.white)
+                            .foregroundColor(ChillTheme.darkText)
                             .font(.headline)
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                    .toggleStyle(SwitchToggleStyle(tint: ChillTheme.accent))
                     .padding(.vertical, 4)
 
                     if let msg = errorMsg {
@@ -153,20 +152,13 @@ struct AddDirectExpenseView: View {
                             .padding(.top, 2)
                     }
 
-                    // Save Button
-                    Button(action: saveExpense) {
-                        HStack {
-                            Spacer()
-                            Text(expenseToEdit == nil ? "Add Expense" : "Save Changes")
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(canSave ? Color.green : Color.gray)
-                        .cornerRadius(14)
+                    // Save Button using primary style
+                    ChillPrimaryButton(
+                        title: expenseToEdit == nil ? "Add Expense" : "Save Changes",
+                        isDisabled: !canSave
+                    ) {
+                        saveExpense()
                     }
-                    .disabled(!canSave)
                 }
             }
             .padding()

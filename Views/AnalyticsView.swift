@@ -55,51 +55,69 @@ struct AnalyticsView: View {
                 VStack(alignment: .leading, spacing: 24) {
 
                     // --- Global Overview ---
-                    GroupBox(label: Text("Global Overview").font(.headline)) {
+                    GroupBox(label: Text("Global Overview").font(.headline).foregroundColor(ChillTheme.darkText)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", globalTotalSpent))")
+                                .foregroundColor(ChillTheme.darkText)
                             Text("Total entries: \(globalExpenseCount)")
+                                .foregroundColor(ChillTheme.darkText)
                         }
                         .padding(.vertical, 4)
                     }
 
                     // --- Group Summary ---
-                    GroupBox(label: Text("Group Summary (\(group.name))").font(.headline)) {
+                    GroupBox(label: Text("Group Summary (\(group.name))").font(.headline).foregroundColor(ChillTheme.darkText)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", totalSpent))")
+                                .foregroundColor(ChillTheme.darkText)
                             Text("Expenses: \(allExpensesForAnalytics.count)")
+                                .foregroundColor(ChillTheme.darkText)
                             Text("Avg/member: \(group.currency.symbol)\(String(format: "%.2f", averagePerMember))")
+                                .foregroundColor(ChillTheme.darkText)
                         }
                         .padding(.vertical, 4)
                     }
 
                     // --- Category Chart ---
                     if !categoryTotals.isEmpty {
-                        GroupBox(label: Text("By Category").font(.headline)) {
+                        GroupBox(label: Text("By Category").font(.headline).foregroundColor(ChillTheme.darkText)) {
                             Chart(categoryTotals, id: \.0) { item in
                                 BarMark(
                                     x: .value("Category", item.0.displayName),
                                     y: .value("Amount", item.1)
                                 )
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(ChillTheme.accent)
                             }
                             .id(debugCounter) // force refresh
                             .frame(height: 200)
+                        }
+                    } else {
+                        // Empty state when no category data
+                        GroupBox(label: Text("By Category").font(.headline).foregroundColor(ChillTheme.darkText)) {
+                            Text("Not enough data yet – start adding expenses to see category insights.")
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                                .frame(maxWidth: .infinity, minHeight: 80)
                         }
                     }
 
                     // --- Payer Chart ---
                     if !memberTotals.isEmpty {
-                        GroupBox(label: Text("By Payer").font(.headline)) {
+                        GroupBox(label: Text("By Payer").font(.headline).foregroundColor(ChillTheme.darkText)) {
                             Chart(memberTotals, id: \.0) { item in
                                 BarMark(
                                     x: .value("Member", item.0.name),
                                     y: .value("Amount", item.1)
                                 )
-                                .foregroundStyle(.green)
+                                .foregroundStyle(ChillTheme.accent)
                             }
                             .id(debugCounter)
                             .frame(height: 200)
+                        }
+                    } else {
+                        GroupBox(label: Text("By Payer").font(.headline).foregroundColor(ChillTheme.darkText)) {
+                            Text("Not enough data yet – start adding expenses to see payer insights.")
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                                .frame(maxWidth: .infinity, minHeight: 80)
                         }
                     }
                 }

@@ -4,13 +4,22 @@ struct ContentView: View {
     @State private var selectedTab: MainTab = .home
     @State private var showAddSheet = false
 
-    @StateObject private var friendsVM = FriendsViewModel.shared
-    @StateObject private var groupVM = GroupViewModel(friendsVM: FriendsViewModel.shared)
+    @StateObject private var friendsVM: FriendsViewModel
+    @StateObject private var groupVM: GroupViewModel
     @ObservedObject private var authService = AuthService.shared
 
-    // Main content as a computed property (with @ViewBuilder)
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+    @State private var showOnboarding: Bool = false
+
+    init() {
+        let f = FriendsViewModel.shared
+        _friendsVM = StateObject(wrappedValue: f)
+        // ✅ GroupViewModel must handle starting its own Firestore listener internally
+        _groupVM = StateObject(wrappedValue: GroupViewModel(friendsVM: f))
+    }
+
     @ViewBuilder
-    var mainContent: some View {
+    private var mainContent: some View {
         switch selectedTab {
         case .home:
             DashboardView(selectedTab: $selectedTab)
@@ -48,10 +57,14 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             mainContent
+
             VStack {
                 Spacer()
-                // Pass the user argument to CustomTabBar to fix the error!
-                CustomTabBar(selectedTab: $selectedTab, showAddSheet: $showAddSheet, user: authService.user)
+                CustomTabBar(
+                    selectedTab: $selectedTab,
+                    showAddSheet: $showAddSheet,
+                    user: authService.user
+                )
             }
         }
         .edgesIgnoringSafeArea(.bottom)
@@ -59,6 +72,25 @@ struct ContentView: View {
         .environmentObject(friendsVM)
         .sheet(isPresented: $showAddSheet) {
             AddGroupView(groupVM: groupVM, friendsVM: friendsVM)
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                hasSeenOnboarding = true
+                showOnboarding = false
+            }
+        }
+        .task {
+            // ✅ Onboarding only; group listener is handled inside GroupViewModel
+            if authService.user != nil && !hasSeenOnboarding {
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+                showOnboarding = true
+            }
+        }
+        // If user logs out, close onboarding if needed
+        .onChange(of: authService.user?.id) { _, newValue in
+            if newValue == nil {
+                showOnboarding = false
+            }
         }
     }
 }

@@ -108,14 +108,28 @@ struct FriendsView: View {
                     SelfSummaryCard(user: me, summary: selfSummary)
                 }
 
-                FriendsListSection(
-                    filteredFriends: filteredFriends,
-                    friendsVM: friendsVM,
-                    groupVM: groupVM,
-                    activeSheet: $activeSheet,
-                    allExpensesWith: allExpensesWith,
-                    balanceWith: balanceWith
-                )
+                if filteredFriends.isEmpty {
+                    VStack(alignment: .center) {
+                        Text("No friends yet – tap 'Add Friend' to get started.")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                            .padding()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(ChillTheme.card)
+                    .cornerRadius(28)
+                    .padding(.horizontal)
+                    .padding(.bottom, 72)
+                } else {
+                    FriendsListSection(
+                        filteredFriends: filteredFriends,
+                        friendsVM: friendsVM,
+                        groupVM: groupVM,
+                        activeSheet: $activeSheet,
+                        allExpensesWith: allExpensesWith,
+                        balanceWith: balanceWith
+                    )
+                }
             }
             .id(forceRefresh)
             .sheet(isPresented: $showAddFriendSheet, onDismiss: delayedRefresh) {
@@ -152,7 +166,7 @@ struct FriendSummaryHeader: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Friends")
                 .font(.system(size: 34, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(ChillTheme.darkText)
                 .padding(.top, 4)
 
             HStack {
@@ -163,7 +177,7 @@ struct FriendSummaryHeader: View {
                     .disableAutocorrection(true)
             }
             .padding(12)
-            .background(Color(.systemGray6))
+            .background(ChillTheme.card)
             .cornerRadius(16)
 
             HStack(spacing: 16) {
@@ -172,7 +186,7 @@ struct FriendSummaryHeader: View {
                         .font(.system(size: 18, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.green)
+                        .background(ChillTheme.accent)
                         .foregroundColor(.white)
                         .cornerRadius(14)
                 }
@@ -188,8 +202,8 @@ struct FriendSummaryHeader: View {
                     .font(.system(size: 18, weight: .semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color(.systemGray4))
-                    .foregroundColor(.gray)
+                    .background(ChillTheme.card)
+                    .foregroundColor(ChillTheme.darkText)
                     .cornerRadius(14)
                 }
             }
@@ -209,34 +223,34 @@ struct SelfSummaryCard: View {
         VStack {
             HStack {
                 // Use unified AvatarView for the current user
-                AvatarView(user: user)
-                    .frame(width: 44, height: 44)
-                VStack(alignment: .leading) {
-                    Text(user.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                    if let email = user.email {
-                        Text(email)
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                    AvatarView(user: user)
+                        .frame(width: 44, height: 44)
+                    VStack(alignment: .leading) {
+                        Text(user.name)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(ChillTheme.darkText)
+                        if let email = user.email {
+                            Text(email)
+                                .font(.system(size: 14))
+                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
+                        }
                     }
-                }
                 Spacer()
             }
             .padding(.bottom, 6)
 
-            if summary.owe < -0.01 {
-                Text("You owe others ₹\(String(format: "%.2f", abs(summary.owe)))")
-                    .foregroundColor(.red)
-            }
-            if summary.owed > 0.01 {
-                Text("Others owe you ₹\(String(format: "%.2f", abs(summary.owed)))")
-                    .foregroundColor(.green)
-            }
-            if summary.owe >= -0.01 && summary.owed <= 0.01 {
-                Text("All settled!")
-                    .foregroundColor(.gray)
-            }
+                if summary.owe < -0.01 {
+                    Text("You owe others ₹\(String(format: "%.2f", abs(summary.owe)))")
+                        .foregroundColor(.red)
+                }
+                if summary.owed > 0.01 {
+                    Text("Others owe you ₹\(String(format: "%.2f", abs(summary.owed)))")
+                        .foregroundColor(.green)
+                }
+                if summary.owe >= -0.01 && summary.owed <= 0.01 {
+                    Text("All settled!")
+                        .foregroundColor(ChillTheme.darkText.opacity(0.5))
+                }
         }
         .font(.headline)
         .padding()
@@ -260,11 +274,11 @@ struct FriendsListSection: View {
             HStack {
                 Text("Your Friends")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 Spacer()
                 Text("\(filteredFriends.count) total")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(ChillTheme.darkText.opacity(0.6))
             }
             .padding(.bottom, 10)
 
@@ -282,10 +296,16 @@ struct FriendsListSection: View {
                     .buttonStyle(PlainButtonStyle())
 
                     Button { activeSheet = .addExpense(friend) } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.title2)
-                            .padding(.leading, 8)
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Add")
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .foregroundColor(ChillTheme.accent)
+                        .background(ChillTheme.card)
+                        .cornerRadius(10)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -319,15 +339,15 @@ struct FriendRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(friend.name)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(ChillTheme.darkText)
                 if let email = friend.email {
                     Text(email)
                         .font(.system(size: 14))
-                        .foregroundColor(.gray)
+                        .foregroundColor(ChillTheme.darkText.opacity(0.6))
                 }
                 Text("Expenses: \(allExpenses.count)")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(ChillTheme.darkText.opacity(0.6))
             }
 
             Spacer()
@@ -347,7 +367,7 @@ struct FriendRow: View {
                 .foregroundColor(.green)
             } else {
                 Text("Settled")
-                    .foregroundColor(.gray)
+                    .foregroundColor(ChillTheme.darkText.opacity(0.5))
             }
         }
         .font(.system(size: 16, weight: .semibold))

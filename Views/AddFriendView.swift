@@ -3,6 +3,7 @@ import SwiftUI
 struct AddFriendView: View {
     @ObservedObject var friendsVM: FriendsViewModel
     @Environment(\.presentationMode) var presentationMode
+
     @State private var email = ""
     @State private var inviteSent = false
     @State private var errorMsg: String?
@@ -10,84 +11,81 @@ struct AddFriendView: View {
     var body: some View {
         ZStack {
             ChillTheme.background.ignoresSafeArea()
-            VStack(spacing: 32) {
-                VStack(alignment: .leading, spacing: 20) {
+
+            VStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("Add Friend")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.bottom, 8)
+                        .foregroundColor(ChillTheme.darkText)
 
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Add by email")
-                            .font(.headline)
-                            .foregroundColor(.gray)
+                    Text("Add by email")
+                        .font(.headline)
+                        .foregroundColor(ChillTheme.darkText.opacity(0.7))
 
-                        TextField("Email", text: $email)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(12)
-                            .foregroundColor(.primary)
+                    ChillTextField(title: "Email", text: $email)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
 
-                        if let msg = errorMsg {
-                            Text(msg)
-                                .foregroundColor(.red)
-                                .font(.subheadline)
-                                .padding(.top, 2)
+                    if let msg = errorMsg {
+                        Text(msg)
+                            .foregroundColor(.red)
+                            .font(.subheadline)
+                    }
+
+                    ChillPrimaryButton(
+                        title: "Add Friend",
+                        isDisabled: email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        systemImage: "person.badge.plus"
+                    ) {
+                        addFriend()
+                    }
+
+                    if inviteSent {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(ChillTheme.accent)
+                            Text("Invite sent!")
+                                .foregroundColor(ChillTheme.accent)
+                                .fontWeight(.semibold)
                         }
-
-                        Button(action: {
-                            friendsVM.addOrInviteFriend(email: email) { result in
-                                switch result {
-                                case .success(let added):
-                                    inviteSent = !added
-                                    errorMsg = nil
-                                    if added { presentationMode.wrappedValue.dismiss() }
-                                case .failure(let error):
-                                    errorMsg = error.localizedDescription
-                                }
-                            }
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text("Add Friend")
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                Spacer()
-                            }
-                            .padding()
-                            .background(email.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.green)
-                            .cornerRadius(14)
-                        }
-                        .disabled(email.trimmingCharacters(in: .whitespaces).isEmpty)
-
-                        if inviteSent {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                Text("Invite sent!")
-                                    .foregroundColor(.green)
-                                    .fontWeight(.semibold)
-                            }
-                            .padding(.top, 8)
-                        }
+                        .padding(.top, 4)
                     }
                 }
                 .padding()
                 .background(ChillTheme.card)
-                .cornerRadius(28)
-                .padding(.horizontal, 24)
+                .cornerRadius(20)
+                .shadow(color: ChillTheme.lightShadow, radius: 8, x: 0, y: 2)
+                .padding(.horizontal, 20)
 
                 Spacer()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(.green)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") {
+                    presentationMode.wrappedValue.dismiss()
                 }
+                .foregroundColor(ChillTheme.accent)
+            }
+        }
+    }
+
+    private func addFriend() {
+        inviteSent = false
+        errorMsg = nil
+
+        friendsVM.addOrInviteFriend(email: email) { result in
+            switch result {
+            case .success(let added):
+                inviteSent = !added
+                errorMsg = nil
+                if added {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            case .failure(let error):
+                print("Add friend error: \(error.localizedDescription)")
+                errorMsg = "Couldn’t add friend. Please check the email and try again."
             }
         }
     }

@@ -14,6 +14,72 @@ struct Group: Identifiable, Hashable, Codable {
     var adjustments: [Adjustment]
     var simplifyDebts: Bool
 
+    // Serialize group to a dictionary for Firestore.  This representation includes
+    // full member dictionaries and a separate array of member IDs for efficient
+    // Firestore queries.  Expenses, activity logs and adjustments are
+    // serialized via their own `toDict` helpers.
+    func toDict() -> [String: Any] {
+        return [
+            "id": id,
+            "name": name,
+            "members": members.map { $0.toDict() },
+            // Also store member IDs separately for efficient Firestore queries
+            "memberIds": members.map { $0.id },
+            "expenses": expenses.map { $0.toDict() },
+            "isPublic": isPublic,
+            "budget": budget as Any,
+            "activity": activity.map { $0.toDict() },
+            "currency": currency.rawValue,
+            "colorName": colorName,
+            "iconName": iconName,
+            "adjustments": adjustments.map { $0.toDict() },
+            "simplifyDebts": simplifyDebts
+        ]
+    }
+
+    /// Initialize a Group from a dictionary pulled from Firestore.  This
+    /// initializer attempts to decode all nested collections (members,
+    /// expenses, activity, adjustments) back into their respective model
+    /// objects.  If mandatory fields are missing, it returns `nil`.
+    static func fromDict(_ dict: [String: Any]) -> Group? {
+        guard
+            let id = dict["id"] as? String,
+            let name = dict["name"] as? String,
+            let membersArr = dict["members"] as? [[String: Any]],
+            let expensesArr = dict["expenses"] as? [[String: Any]],
+            let isPublic = dict["isPublic"] as? Bool,
+            let currencyRaw = dict["currency"] as? String,
+            let currency = Currency(rawValue: currencyRaw),
+            let colorName = dict["colorName"] as? String,
+            let iconName = dict["iconName"] as? String,
+            let adjustmentsArr = dict["adjustments"] as? [[String: Any]],
+            let simplifyDebts = dict["simplifyDebts"] as? Bool
+        else {
+            return nil
+        }
+        let budget = dict["budget"] as? Double
+        let activityArr = dict["activity"] as? [[String: Any]] ?? []
+        // Convert nested dictionaries back to model objects
+        let members: [User] = membersArr.compactMap { User.fromDict($0) }
+        let expenses: [Expense] = expensesArr.compactMap { Expense.fromDict($0) }
+        let activity: [Activity] = activityArr.compactMap { Activity.fromDict($0) }
+        let adjustments: [Adjustment] = adjustmentsArr.compactMap { Adjustment.fromDict($0) }
+        return Group(
+            id: id,
+            name: name,
+            members: members,
+            expenses: expenses,
+            isPublic: isPublic,
+            budget: budget,
+            activity: activity,
+            currency: currency,
+            colorName: colorName,
+            iconName: iconName,
+            adjustments: adjustments,
+            simplifyDebts: simplifyDebts
+        )
+    }
+
     // MARK: - Default Initializer
     init(
         id: String = UUID().uuidString,
