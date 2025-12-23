@@ -1,9 +1,18 @@
 import UIKit
 import FirebaseCore
 import FirebaseMessaging
+import FirebaseAuth
+import FirebaseFirestore
 import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+class AppDelegate: NSObject,
+                   UIApplicationDelegate,
+                   UNUserNotificationCenterDelegate,
+                   MessagingDelegate {
+
+    // Cache token until user is logged in
+    private var pendingFCMToken: String?
+    private var lastSavedToken: String?
 
     func application(
         _ application: UIApplication,
@@ -13,75 +22,151 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         FirebaseApp.configure()
         print("🔥 Firebase configured")
 
-        // CHECK ENTITLEMENTS ON LAUNCH
-        if let entitlements = Bundle.main.entitlementsDictionary {
-            print("📦 Loaded App Entitlements: \(entitlements)")
-        } else {
-            print("⚠️ Could NOT load entitlements! APNs will NOT work.")
-        }
-
+        // Delegates
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
 
-        // Ask notification permission
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
-            granted, error in
-            print("📩 Notification permission granted: \(granted)")
-            if let error = error { print("❌ Notification permission error: \(error)") }
+        // Ask for permission + APNs
+        requestNotificationPermissionAndRegister()
 
-            guard granted else { return }
-
-            DispatchQueue.main.async {
-                UIApplication.shared.registerForRemoteNotifications()
-                print("📱 Registered for APNs")
-            }
-        }
-
-        // Try to get FCM token before APNs arrives (normal if failed)
-        Messaging.messaging().token { token, error in
-            if let token = token {
-                print("🌟 Initial FCM token (pre-APNs): \(token)")
-            } else if let error = error {
-                print("⚠️ Initial FCM token error (expected): \(error.localizedDescription)")
+        // Save token after auth becomes available
+        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self = self else { return }
+            if let user = user {
+                print("✅ Auth ready for uid=\(user.uid)")
+                if let token = self.pendingFCMToken {
+                    print("📌 Saving pending FCM token after login: \(token)")
+                    self.saveFCMTokenToFirestore(token)
+                    self.pendingFCMToken = nil
+                }
+            } else {
+                print("⚠️ Auth not ready (logged out). Token will be saved after login.")
             }
         }
 
         return true
     }
 
-    // MARK: - Got APNs token
-    func application(_ application: UIApplication,
-                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    // MARK: - Notification permission + APNs registration
+    private func requestNotificationPermissionAndRegister() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("🔔 Notification settings (before prompt): auth=\(settings.authorizationStatus.rawValue), alert=\(settings.alertSetting.rawValue), sound=\(settings.soundSetting.rawValue), badge=\(settings.badgeSetting.rawValue)")
+        }
 
-        print("✅ didRegisterForRemoteNotifications called!")
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            print("📩 Notification permission granted: \(granted)")
+            if let error = error {
+                print("❌ Notification permission error: \(error.localizedDescription)")
+            }
 
-        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("🍏 APNs device token: \(tokenString)")
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                print("🔔 Notification settings (after prompt): auth=\(settings.authorizationStatus.rawValue), alert=\(settings.alertSetting.rawValue), sound=\(settings.soundSetting.rawValue), badge=\(settings.badgeSetting.rawValue)")
+            }
 
-        // IMPORTANT
-        Messaging.messaging().apnsToken = deviceToken
+            guard granted else { return }
 
-        // Retrieve new FCM token now that APNs is linked
-        Messaging.messaging().token { token, error in
-            if let token = token {
-                print("🌟 FCM registration token (post-APNs): \(token)")
-            } else if let error = error {
-                print("❌ FCM token error (post-APNs): \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                UIApplication.shared.registerForRemoteNotifications()
+                print("📱 registerForRemoteNotifications() called")
             }
         }
     }
 
+    // MARK: - APNs SUCCESS
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+
+        print("🟩🟩🟩 APNs SUCCESS CALLBACK HIT 🟩🟩🟩")
+
+        let apnsTokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("🍏 APNs device token: \(apnsTokenString)")
+
+        // Tell Firebase Messaging about the APNs token
+        Messaging.messaging().apnsToken = deviceToken
+
+        // Fetch FCM token AFTER APNs token is set
+        Messaging.messaging().token { [weak self] token, error in
+            if let error = error {
+                print("❌ FCM token error (post-APNs): \(error.localizedDescription)")
+                return
+            }
+            guard let token = token else {
+                print("❌ FCM token is nil (post-APNs)")
+                return
+            }
+
+            print("🌟 FCM token (post-APNs): \(token)")
+            self?.handleToken(token)
+        }
+    }
+
+    // MARK: - APNs FAIL
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("❌ Failed to register for remote notifications: \(error.localizedDescription)")
+        print("🟥🟥🟥 APNs FAIL CALLBACK HIT 🟥🟥🟥 \(error.localizedDescription)")
     }
 
-    // Token refreshed callback
+    // MARK: - FCM token refreshed/updated
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("🔁 Refreshed FCM token (callback): \(fcmToken ?? "nil")")
+        guard let token = fcmToken else {
+            print("🔁 didReceiveRegistrationToken: nil")
+            return
+        }
+
+        print("🔁 Refreshed FCM token (callback): \(token)")
+        handleToken(token)
     }
 
-    // Foreground notification banner
+    private func handleToken(_ token: String) {
+        if lastSavedToken == token {
+            print("ℹ️ Same token already handled in this session -> skip save")
+            return
+        }
+        lastSavedToken = token
+
+        guard Auth.auth().currentUser != nil else {
+            print("⚠️ No logged-in user yet. Caching token to save after login.")
+            pendingFCMToken = token
+            return
+        }
+
+        saveFCMTokenToFirestore(token)
+    }
+
+    // MARK: - Save token for MULTI-DEVICE support
+    private func saveFCMTokenToFirestore(_ token: String) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("⚠️ No logged-in user. Skipping FCM token save.")
+            pendingFCMToken = token
+            return
+        }
+
+        let db = Firestore.firestore()
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "unknown-device"
+        let deviceName = UIDevice.current.name
+
+        let data: [String: Any] = [
+            "token": token,
+            "platform": "iOS",
+            "deviceId": deviceId,
+            "deviceName": deviceName,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        db.collection("users")
+            .document(uid)
+            .collection("pushTokens")
+            .document(token)
+            .setData(data, merge: true) { error in
+                if let error = error {
+                    print("❌ Failed saving FCM token: \(error.localizedDescription)")
+                } else {
+                    print("✅ Saved FCM token to Firestore (multi-device): \(token)")
+                }
+            }
+    }
+
+    // MARK: - Foreground notifications (show banner while app is open)
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -90,15 +175,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         print("📲 Foreground notification: \(notification.request.identifier)")
         completionHandler([.banner, .sound, .badge])
     }
-}
-extension Bundle {
-    var entitlementsDictionary: [String: Any]? {
-        guard
-            let url = url(forResource: "embedded", withExtension: "entitlements"),
-            let data = try? Data(contentsOf: url),
-            let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
-        else { return nil }
 
-        return plist as? [String : Any]
+    // MARK: - Background / tap handling debug
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        print("📬 didReceiveRemoteNotification userInfo = \(userInfo)")
+        completionHandler(.noData)
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-class ExpenseViewModel: ObservableObject {
+final class ExpenseViewModel: ObservableObject {
     let groupVM: GroupViewModel
 
     init(groupVM: GroupViewModel) {
@@ -8,81 +8,26 @@ class ExpenseViewModel: ObservableObject {
     }
 
     func addExpense(_ expense: Expense, to group: Group) {
-        guard let index = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
-
-        groupVM.groups[index].expenses.append(expense)
-
-        let symbol = group.currency.symbol
-        let amt = String(format: "%.2f", expense.amount)
-        groupVM.logActivity(for: group.id, text: "Added expense \(expense.title) for \(symbol)\(amt)")
-
-        // Push notification to all group members except current user
-        if let me = groupVM.friendsVM?.currentUser {
-            for member in groupVM.groups[index].members where member.id != me.id {
-                NotificationManager.shared.sendPushNotification(
-                    to: member,
-                    title: "Group Expense Added",
-                    body: "\(me.name) added \"\(expense.title)\" for \(symbol)\(amt) in \"\(group.name)\"."
-                )
-            }
-        }
-
-        // ✅ CRITICAL: persist to Firestore so other devices sync
-        groupVM.updateGroup(groupVM.groups[index])
+        groupVM.addExpense(expense, to: group)
     }
 
     func updateExpense(_ expense: Expense, in group: Group) {
-        guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
-
-        if let expenseIndex = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) {
-            groupVM.groups[groupIndex].expenses[expenseIndex] = expense
-
-            let symbol = group.currency.symbol
-            let amt = String(format: "%.2f", expense.amount)
-            groupVM.logActivity(for: group.id, text: "Updated expense \(expense.title) to \(symbol)\(amt)")
-
-            // Push notification to all group members except current user
-            if let me = groupVM.friendsVM?.currentUser {
-                for member in groupVM.groups[groupIndex].members where member.id != me.id {
-                    NotificationManager.shared.sendPushNotification(
-                        to: member,
-                        title: "Group Expense Edited",
-                        body: "\(me.name) edited \"\(expense.title)\" for \(symbol)\(amt) in \"\(group.name)\"."
-                    )
-                }
-            }
-
-            // ✅ CRITICAL: persist
-            groupVM.updateGroup(groupVM.groups[groupIndex])
-        }
+        groupVM.updateExpense(expense, in: group)
     }
 
     func deleteExpenses(at offsets: IndexSet, from group: Group) {
+        // translate offsets -> actual Expense objects
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
+        let expenses = groupVM.groups[groupIndex].expenses
 
-        let titles = offsets.compactMap { offset -> String? in
-            guard offset < groupVM.groups[groupIndex].expenses.count else { return nil }
-            return groupVM.groups[groupIndex].expenses[offset].title
+        let toDelete = offsets.compactMap { idx -> Expense? in
+            guard idx >= 0, idx < expenses.count else { return nil }
+            return expenses[idx]
         }
 
-        groupVM.groups[groupIndex].expenses.remove(atOffsets: offsets)
-
-        // Push notification to all group members except current user for each deleted expense
-        if let me = groupVM.friendsVM?.currentUser {
-            for title in titles {
-                groupVM.logActivity(for: group.id, text: "Deleted expense \(title)")
-                for member in groupVM.groups[groupIndex].members where member.id != me.id {
-                    NotificationManager.shared.sendPushNotification(
-                        to: member,
-                        title: "Group Expense Deleted",
-                        body: "\(me.name) deleted \"\(title)\" in \"\(group.name)\"."
-                    )
-                }
-            }
+        for exp in toDelete {
+            groupVM.deleteExpense(exp, from: group)
         }
-
-        // ✅ CRITICAL: persist deletions
-        groupVM.updateGroup(groupVM.groups[groupIndex])
     }
 
     func getBalances(for group: Group) -> [User: Double] {
@@ -90,6 +35,7 @@ class ExpenseViewModel: ObservableObject {
         for user in group.members {
             balances[user] = 0.0
         }
+
         for expense in group.expenses {
             let share = expense.amount / Double(expense.participants.count)
             for participant in expense.participants {
@@ -97,15 +43,17 @@ class ExpenseViewModel: ObservableObject {
             }
             balances[expense.paidBy, default: 0.0] += expense.amount
         }
+
         for adjustment in group.adjustments {
-            guard balances.keys.contains(adjustment.from), balances.keys.contains(adjustment.to) else { continue }
+            guard balances.keys.contains(adjustment.from),
+                  balances.keys.contains(adjustment.to) else { continue }
             balances[adjustment.from, default: 0.0] += adjustment.amount
             balances[adjustment.to, default: 0.0] -= adjustment.amount
         }
+
         return balances
     }
 
-    /// Returns settlements using either simplified or standard logic based on group.simplifyDebts.
     func getSettlement(for group: Group) -> [(payer: User, payee: User, amount: Double)] {
         if group.simplifyDebts {
             return getSimplifiedSettlement(for: group)
@@ -114,11 +62,11 @@ class ExpenseViewModel: ObservableObject {
         }
     }
 
-    // Standard settlements: Each debtor pays each creditor in order, NO optimization/minimization.
     private func getStandardSettlement(for group: Group) -> [(payer: User, payee: User, amount: Double)] {
         let balances = getBalances(for: group)
         var debtors: [(user: User, amount: Double)] = []
         var creditors: [(user: User, amount: Double)] = []
+
         for (user, balance) in balances {
             if balance < -0.01 {
                 debtors.append((user, -balance))
@@ -131,31 +79,31 @@ class ExpenseViewModel: ObservableObject {
         for debtor in debtors {
             var amountOwed = debtor.amount
             for i in creditors.indices {
-                let creditor = creditors[i]
-                if creditor.amount <= 0.01 || amountOwed <= 0.01 { continue }
-                let payment = min(amountOwed, creditor.amount)
-                settlements.append((payer: debtor.user, payee: creditor.user, amount: payment))
+                if creditors[i].amount <= 0.01 || amountOwed <= 0.01 { continue }
+                let payment = min(amountOwed, creditors[i].amount)
+                settlements.append((payer: debtor.user, payee: creditors[i].user, amount: payment))
                 amountOwed -= payment
                 creditors[i].amount -= payment
             }
         }
+
         return settlements
     }
 
-    // Simplified settlements: Minimize number of transactions.
     private func getSimplifiedSettlement(for group: Group) -> [(payer: User, payee: User, amount: Double)] {
         var balances = getBalances(for: group)
         balances = balances.mapValues { abs($0) < 0.01 ? 0 : $0 }
-        var balancesArray = balances.map { ($0.key, $0.value) }
-        balancesArray.sort { $0.1 < $1.1 }
+
+        var arr = balances.map { ($0.key, $0.value) }
+        arr.sort { $0.1 < $1.1 }
 
         var settlements: [(payer: User, payee: User, amount: Double)] = []
         var i = 0
-        var j = balancesArray.count - 1
+        var j = arr.count - 1
 
         while i < j {
-            let (debtor, debt) = balancesArray[i]
-            let (creditor, credit) = balancesArray[j]
+            let (debtor, debt) = arr[i]
+            let (creditor, credit) = arr[j]
 
             if debt == 0 { i += 1; continue }
             if credit == 0 { j -= 1; continue }
@@ -167,11 +115,11 @@ class ExpenseViewModel: ObservableObject {
             }
 
             settlements.append((payer: debtor, payee: creditor, amount: amount))
-            balancesArray[i].1 += amount
-            balancesArray[j].1 -= amount
+            arr[i].1 += amount
+            arr[j].1 -= amount
 
-            if abs(balancesArray[i].1) < 0.01 { i += 1 }
-            if abs(balancesArray[j].1) < 0.01 { j -= 1 }
+            if abs(arr[i].1) < 0.01 { i += 1 }
+            if abs(arr[j].1) < 0.01 { j -= 1 }
         }
 
         return settlements
@@ -185,81 +133,32 @@ class ExpenseViewModel: ObservableObject {
 
         let formattedAmount = String(format: "%.2f", abs(amount))
         let currencySymbol = group.currency.symbol
-        let description: String
-        if amount > 0 {
-            description = "\(from.name) paid \(to.name) \(currencySymbol)\(formattedAmount)"
-        } else {
-            description = "\(from.name) forgave \(to.name) \(currencySymbol)\(formattedAmount)"
-        }
+        let description: String = amount > 0
+            ? "\(from.name) paid \(to.name) \(currencySymbol)\(formattedAmount)"
+            : "\(from.name) forgave \(to.name) \(currencySymbol)\(formattedAmount)"
 
         groupVM.logActivity(for: group.id, text: description)
-
-        // Push notification to all group members except current user
-        if let me = groupVM.friendsVM?.currentUser {
-            for member in groupVM.groups[index].members where member.id != me.id {
-                NotificationManager.shared.sendPushNotification(
-                    to: member,
-                    title: "Adjustment Recorded",
-                    body: description + " in \"\(group.name)\"."
-                )
-            }
-        }
-
-        // ✅ CRITICAL: persist adjustment
-        groupVM.updateGroup(groupVM.groups[index])
+        groupVM.updateGroup(groupVM.groups[index]) // persists meta changes
     }
 
     func addComment(_ text: String, by author: User, to expense: Expense, in group: Group) {
         guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
+        guard let expenseIndex = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) else { return }
 
-        if let _ = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == expense.id }) {
-            var updatedExpense = expense
-            let comment = Comment(id: UUID(), user: author, text: text, date: Date())
-            updatedExpense.comments.append(comment)
+        var updatedExpense = groupVM.groups[groupIndex].expenses[expenseIndex]
+        let comment = Comment(id: UUID(), user: author, text: text, date: Date())
+        updatedExpense.comments.append(comment)
 
-            // update expense in group
-            if let idx = groupVM.groups[groupIndex].expenses.firstIndex(where: { $0.id == updatedExpense.id }) {
-                groupVM.groups[groupIndex].expenses[idx] = updatedExpense
-            }
+        groupVM.groups[groupIndex].expenses[expenseIndex] = updatedExpense
+        groupVM.logActivity(for: group.id, text: "\(author.name) commented on \(expense.title)")
 
-            groupVM.logActivity(for: group.id, text: "\(author.name) commented on \(expense.title)")
-
-            // Push notification to all group members except current user
-            if let me = groupVM.friendsVM?.currentUser {
-                for member in groupVM.groups[groupIndex].members where member.id != me.id {
-                    NotificationManager.shared.sendPushNotification(
-                        to: member,
-                        title: "Comment Added",
-                        body: "\(author.name) commented on \"\(expense.title)\" in \"\(group.name)\"."
-                    )
-                }
-            }
-
-            // ✅ CRITICAL: persist comment/update
-            groupVM.updateGroup(groupVM.groups[groupIndex])
-        }
+        // Persist the expense update (subcollection)
+        groupVM.updateExpense(updatedExpense, in: group)
     }
 
     func settleExpense(_ expense: Expense, in group: Group) {
-        guard let groupIndex = groupVM.groups.firstIndex(where: { $0.id == group.id }) else { return }
-
-        if groupVM.groups[groupIndex].expenses.contains(where: { $0.id == expense.id }) {
-            // If you later add isSettled, update that field here before persisting.
-            groupVM.logActivity(for: group.id, text: "Settled expense '\(expense.title)'")
-
-            // Push notification to all group members except current user
-            if let me = groupVM.friendsVM?.currentUser {
-                for member in groupVM.groups[groupIndex].members where member.id != me.id {
-                    NotificationManager.shared.sendPushNotification(
-                        to: member,
-                        title: "Expense Settled",
-                        body: "\(me.name) settled \"\(expense.title)\" in \"\(group.name)\"."
-                    )
-                }
-            }
-
-            // ✅ Persist activity change (and any future settled field)
-            groupVM.updateGroup(groupVM.groups[groupIndex])
-        }
+        // If you later add an `isSettled` field, update it here and persist using updateExpense(...)
+        groupVM.logActivity(for: group.id, text: "Settled expense '\(expense.title)'")
+        groupVM.updateGroup(group) // meta/activity persistence
     }
 }

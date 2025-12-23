@@ -22,27 +22,31 @@ final class GroupViewModel: ObservableObject {
 
     weak var friendsVM: FriendsViewModel?
 
-    // Firestore integration
     private let db = Firestore.firestore()
     private var groupsListener: ListenerRegistration?
-    @Published var isLoadingGroups: Bool = false
+    private var expenseListeners: [String: ListenerRegistration] = [:] // groupId -> listener
 
+    @Published var isLoadingGroups: Bool = false
     private var cancellables = Set<AnyCancellable>()
 
     init(friendsVM: FriendsViewModel? = nil) {
         self.friendsVM = friendsVM
 
-        // Load local cache first (fast UI)
+        // local cache first
         self.groups = StorageManager.shared.loadGroups()
         friendsVM?.syncWithGroups(groups)
         updateGlobalCaches()
 
-        // ✅ IMPORTANT: attach listener when currentUser becomes available (not just after 0.1s)
         observeCurrentUserAndListen()
     }
 
+    deinit {
+        groupsListener?.remove()
+        expenseListeners.values.forEach { $0.remove() }
+        expenseListeners.removeAll()
+    }
+
     private func observeCurrentUserAndListen() {
-        // If friendsVM exists, observe changes to currentUser and (re)attach listener
         friendsVM?.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user in
@@ -52,29 +56,36 @@ final class GroupViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Also handle the case where currentUser is already set before this VM is created
         if let uid = friendsVM?.currentUser?.id, !uid.isEmpty {
             startListening(forUserId: uid)
         }
     }
 
-    // MARK: - CRUD
+    // MARK: - CRUD (Group Meta)
     func addGroup(_ group: Group) {
         groups.append(group)
         logActivity(for: group.id, text: "Created group \(group.name)")
-        saveGroupToFirestore(group)
+        saveGroupMetaToFirestore(group)
+        // expenses will be written when you add them (subcollection)
     }
 
     func updateGroup(_ group: Group) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         groups[index] = group
         logActivity(for: group.id, text: "Updated group \(group.name)")
-        saveGroupToFirestore(groups[index])
+        saveGroupMetaToFirestore(groups[index])
     }
 
     func deleteGroup(_ group: Group) {
+        // remove local
         groups.removeAll { $0.id == group.id }
         updateGlobalCaches()
+
+        // remove listeners
+        expenseListeners[group.id]?.remove()
+        expenseListeners[group.id] = nil
+
+        // delete from Firestore
         deleteGroupFromFirestore(group)
     }
 
@@ -82,7 +93,7 @@ final class GroupViewModel: ObservableObject {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
         groups[index].name = newName
         logActivity(for: group.id, text: "Renamed group to \(newName)")
-        saveGroupToFirestore(groups[index])
+        saveGroupMetaToFirestore(groups[index])
     }
 
     func addMember(_ user: User, to group: Group) {
@@ -90,14 +101,7 @@ final class GroupViewModel: ObservableObject {
         if !groups[index].members.contains(user) {
             groups[index].members.append(user)
             logActivity(for: group.id, text: "Added member \(user.name)")
-
-            NotificationManager.shared.sendPushNotification(
-                to: user,
-                title: "Added to Group",
-                body: "You've been added to group \"\(groups[index].name)\"."
-            )
-
-            saveGroupToFirestore(groups[index])
+            saveGroupMetaToFirestore(groups[index])
         }
     }
 
@@ -105,63 +109,34 @@ final class GroupViewModel: ObservableObject {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
 
         var g = groups[index]
-        g.expenses.removeAll { exp in
-            exp.paidBy.id == user.id || exp.participants.contains(where: { $0.id == user.id })
-        }
         g.members.removeAll { $0.id == user.id }
+        // NOTE: We do NOT auto-delete their past expenses here — you can decide policy later.
         groups[index] = g
 
         logActivity(for: group.id, text: "Removed member \(user.name)")
-
-        NotificationManager.shared.sendPushNotification(
-            to: user,
-            title: "Removed from Group",
-            body: "You've been removed from group \"\(groups[index].name)\"."
-        )
-
-        saveGroupToFirestore(groups[index])
+        saveGroupMetaToFirestore(groups[index])
     }
 
-    // MARK: - Group Expenses (persist + sync)
+    // MARK: - ✅ Group Expenses (FireStore Subcollection)
     func addExpense(_ expense: Expense, to group: Group) {
         guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
 
+        // update local immediately (fast UI)
         groups[idx].expenses.append(expense)
         logActivity(for: group.id, text: "Added expense: \(expense.title)")
 
-        if let me = friendsVM?.currentUser {
-            for member in groups[idx].members where member.id != me.id {
-                NotificationManager.shared.sendPushNotification(
-                    to: member,
-                    title: "Group Expense Added",
-                    body: "\(me.name) added \"\(expense.title)\" for ₹\(expense.amount) in \"\(group.name)\"."
-                )
-            }
-        }
-
-        // ✅ Persist to Firestore so other devices get it
-        saveGroupToFirestore(groups[idx])
+        // write to Firestore subcollection (this triggers your Cloud Function!)
+        saveGroupExpenseToFirestore(expense, groupId: group.id)
     }
 
     func updateExpense(_ expense: Expense, in group: Group) {
-        guard let idx = groups.firstIndex(where: { $0.id == group.id }),
-              let eIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+        guard let idx = groups.firstIndex(where: { $0.id == group.id }) else { return }
+        guard let eIdx = groups[idx].expenses.firstIndex(where: { $0.id == expense.id }) else { return }
 
         groups[idx].expenses[eIdx] = expense
         logActivity(for: group.id, text: "Updated expense: \(expense.title)")
 
-        if let me = friendsVM?.currentUser {
-            for member in groups[idx].members where member.id != me.id {
-                NotificationManager.shared.sendPushNotification(
-                    to: member,
-                    title: "Group Expense Edited",
-                    body: "\(me.name) edited \"\(expense.title)\" for ₹\(expense.amount) in \"\(group.name)\"."
-                )
-            }
-        }
-
-        // ✅ Persist
-        saveGroupToFirestore(groups[idx])
+        saveGroupExpenseToFirestore(expense, groupId: group.id)
     }
 
     func deleteExpense(_ expense: Expense, from group: Group) {
@@ -170,18 +145,7 @@ final class GroupViewModel: ObservableObject {
         groups[idx].expenses.removeAll { $0.id == expense.id }
         logActivity(for: group.id, text: "Deleted expense: \(expense.title)")
 
-        if let me = friendsVM?.currentUser {
-            for member in groups[idx].members where member.id != me.id {
-                NotificationManager.shared.sendPushNotification(
-                    to: member,
-                    title: "Group Expense Deleted",
-                    body: "\(me.name) deleted \"\(expense.title)\" in \"\(group.name)\"."
-                )
-            }
-        }
-
-        // ✅ Persist
-        saveGroupToFirestore(groups[idx])
+        deleteGroupExpenseFromFirestore(expenseId: expense.id.uuidString, groupId: group.id)
     }
 
     // MARK: - Activity & metrics
@@ -210,10 +174,14 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Firestore syncing
+    // MARK: - ✅ Firestore syncing (Groups + Expenses)
     private func startListening(forUserId currentUserId: String) {
         groupsListener?.remove()
         groupsListener = nil
+
+        // remove old expense listeners
+        expenseListeners.values.forEach { $0.remove() }
+        expenseListeners.removeAll()
 
         isLoadingGroups = true
 
@@ -237,20 +205,31 @@ final class GroupViewModel: ObservableObject {
                 }
 
                 var updated: [Group] = []
+                let groupIds = docs.map { $0.documentID }
+
                 for doc in docs {
                     var data = doc.data()
-
-                    // ✅ Ensure dict has correct id if your parser expects it
-                    if data["id"] == nil {
-                        data["id"] = doc.documentID
-                    }
+                    if data["id"] == nil { data["id"] = doc.documentID }
 
                     if let g = Group.fromDict(data) {
-                        updated.append(g)
+                        // IMPORTANT: expenses will be loaded from subcollection listener
+                        var group = g
+                        group.expenses = self.groups.first(where: { $0.id == group.id })?.expenses ?? []
+                        updated.append(group)
+
+                        // attach (or reattach) expense listener
+                        self.attachExpenseListener(groupId: group.id)
                     }
                 }
 
-                // Optional: sort by name so list is stable
+                // remove listeners for groups no longer present
+                for (gid, listener) in self.expenseListeners {
+                    if !groupIds.contains(gid) {
+                        listener.remove()
+                        self.expenseListeners[gid] = nil
+                    }
+                }
+
                 updated.sort { $0.name.lowercased() < $1.name.lowercased() }
 
                 DispatchQueue.main.async {
@@ -260,26 +239,96 @@ final class GroupViewModel: ObservableObject {
             }
     }
 
-    /// Persist a group document to Firestore
-    private func saveGroupToFirestore(_ group: Group) {
+    private func attachExpenseListener(groupId: String) {
+        // already listening
+        if expenseListeners[groupId] != nil { return }
+
+        let listener = db.collection("groups")
+            .document(groupId)
+            .collection("expenses")
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self else { return }
+
+                if let error = error {
+                    print("❌ Error listening expenses for group \(groupId): \(error.localizedDescription)")
+                    return
+                }
+
+                guard let docs = snapshot?.documents else { return }
+
+                var expenses: [Expense] = []
+                for doc in docs {
+                    var data = doc.data()
+                    if data["id"] == nil { data["id"] = doc.documentID }
+                    if let exp = Expense.fromDict(data) {
+                        expenses.append(exp)
+                    }
+                }
+
+                expenses.sort { $0.date > $1.date }
+
+                DispatchQueue.main.async {
+                    if let idx = self.groups.firstIndex(where: { $0.id == groupId }) {
+                        self.groups[idx].expenses = expenses
+                        self.friendsVM?.syncWithGroups(self.groups)
+                        self.updateGlobalCaches()
+                    }
+                }
+            }
+
+        expenseListeners[groupId] = listener
+    }
+
+    // MARK: - ✅ Firestore writes
+    private func saveGroupMetaToFirestore(_ group: Group) {
         var data = group.toDict()
 
-        // ✅ Critical: make sure memberIds exists for the query `.whereField("memberIds", arrayContains:)`
-        if data["memberIds"] == nil {
-            data["memberIds"] = group.members.map { $0.id }
-        }
+        // Critical for query `.whereField("memberIds", arrayContains:)`
+        data["memberIds"] = group.members.map { $0.id }
 
-        // ✅ Ensure id exists too (helps parsing)
-        if data["id"] == nil {
-            data["id"] = group.id
-        }
+        // Ensure id exists for parsing
+        data["id"] = group.id
+
+        // IMPORTANT: do not rely on embedding huge expenses array.
+        // If your Group.toDict includes expenses, you can strip it:
+        data["expenses"] = nil
 
         db.collection("groups").document(group.id).setData(data, merge: true)
     }
 
-    /// Delete a group document from Firestore
+    private func saveGroupExpenseToFirestore(_ expense: Expense, groupId: String) {
+        var data = expense.toDict()
+
+        // Cloud function depends on this:
+        data["participantIds"] = expense.participants.map { $0.id }
+
+        // Identify sender so function can avoid notifying sender
+        if let senderId = friendsVM?.currentUser?.id {
+            data["senderUserId"] = senderId
+        }
+
+        // Keep id consistent
+        data["id"] = expense.id.uuidString
+
+        db.collection("groups")
+            .document(groupId)
+            .collection("expenses")
+            .document(expense.id.uuidString)
+            .setData(data, merge: true)
+    }
+
+    private func deleteGroupExpenseFromFirestore(expenseId: String, groupId: String) {
+        db.collection("groups")
+            .document(groupId)
+            .collection("expenses")
+            .document(expenseId)
+            .delete()
+    }
+
     private func deleteGroupFromFirestore(_ group: Group) {
         db.collection("groups").document(group.id).delete()
+        // NOTE: subcollection docs are not auto-deleted by Firestore.
+        // You can add a cleanup function later if needed.
     }
 
     // MARK: - Export/Invite

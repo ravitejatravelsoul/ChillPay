@@ -17,22 +17,15 @@ enum SettleMethod: String, Codable {
 final class FriendsViewModel: ObservableObject {
     static let shared = FriendsViewModel()
 
-    // Published properties that trigger view refreshes
     @Published var friends: [User] = []
     @Published var pendingInvites: [Invite] = []
 
-    // ✅ Shared + real-time direct expenses (from /directExpenses)
     @Published var directExpenses: [Expense] = [] {
-        didSet {
-            DispatchQueue.main.async { self.objectWillChange.send() }
-        }
+        didSet { DispatchQueue.main.async { self.objectWillChange.send() } }
     }
 
-    // Group expenses are injected from GroupViewModel.syncWithGroups(...)
     @Published var groupExpenses: [Expense] = [] {
-        didSet {
-            DispatchQueue.main.async { self.objectWillChange.send() }
-        }
+        didSet { DispatchQueue.main.async { self.objectWillChange.send() } }
     }
 
     @Published var didUpdateExpenses: Bool = false
@@ -42,7 +35,7 @@ final class FriendsViewModel: ObservableObject {
         didSet {
             print("DEBUG: [FriendsVM] currentUser didSet:", String(describing: currentUser))
             fetchFriends()
-            startListeningToDirectExpenses() // ✅ main fix
+            startListeningToDirectExpenses()
             DispatchQueue.main.async { self.objectWillChange.send() }
         }
     }
@@ -51,7 +44,6 @@ final class FriendsViewModel: ObservableObject {
     private var deletedFriendIds: Set<String> = []
     private let db = Firestore.firestore()
 
-    // ✅ Listener handle
     private var directExpensesListener: ListenerRegistration?
 
     // MARK: - Sync with Groups
@@ -99,16 +91,12 @@ final class FriendsViewModel: ObservableObject {
                 var updated: [Expense] = []
                 for doc in docs {
                     var data = doc.data()
-                    // Ensure id exists even if model expects it
-                    if data["id"] == nil {
-                        data["id"] = doc.documentID
-                    }
+                    if data["id"] == nil { data["id"] = doc.documentID }
                     if let exp = Expense.fromDict(data) {
                         updated.append(exp)
                     }
                 }
 
-                // Sort newest first
                 updated.sort { $0.date > $1.date }
 
                 DispatchQueue.main.async {
@@ -121,17 +109,16 @@ final class FriendsViewModel: ObservableObject {
     }
 
     private func directExpenseDocId(for expense: Expense) -> String {
-        // Your Expense.id is UUID in your code
-        return expense.id.uuidString
+        expense.id.uuidString
     }
 
     private func upsertDirectExpense(_ expense: Expense) {
         let docId = directExpenseDocId(for: expense)
         var data = expense.toDict()
 
-        // Force the shared fields to exist exactly as your Firestore screenshot shows
         data["id"] = docId
         data["participantIds"] = expense.participants.map { $0.id }
+        data["groupID"] = nil
 
         db.collection("directExpenses").document(docId).setData(data, merge: true)
     }
@@ -304,7 +291,6 @@ final class FriendsViewModel: ObservableObject {
         let message: String
     }
 
-    /// Clears all direct expenses between me and friend (shared Firestore docs)
     func clearExpensesWith(friend: User, method: SettleMethod, note: String? = nil) {
         guard let me = currentUser else { return }
 
@@ -314,8 +300,6 @@ final class FriendsViewModel: ObservableObject {
         }
 
         print("DEBUG: Will clear \(toClear.count) shared directExpenses docs")
-
-        // Delete docs in Firestore
         for exp in toClear {
             deleteDirectExpense(exp)
         }
@@ -330,11 +314,7 @@ final class FriendsViewModel: ObservableObject {
         )
         objectWillChange.send()
 
-        NotificationManager.shared.sendPushNotification(
-            to: friend,
-            title: "Expenses Cleared",
-            body: "\(me.name) settled up with you!"
-        )
+        // ✅ Push handled by Firestore trigger when deletes/updates happen (server-side)
     }
 
     func isSettledWith(friend: User) -> Bool {
@@ -397,7 +377,7 @@ final class FriendsViewModel: ObservableObject {
         return entries.sorted { $0.date > $1.date }
     }
 
-    // MARK: - Aggregate direct/group expenses for dashboard/analytics
+    // MARK: - Aggregate direct/group expenses
     func allExpensesWith(friend: User) -> [Expense] {
         guard let me = currentUser else { return [] }
         let direct = directExpenses.filter {
@@ -410,7 +390,7 @@ final class FriendsViewModel: ObservableObject {
         return (direct + group).sorted { $0.date > $1.date }
     }
 
-    // MARK: - ✅ Add/Edit Direct Expense (now shared Firestore docs)
+    // MARK: - ✅ Add/Edit Direct Expense (shared Firestore docs)
     func addDirectExpense(to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
         guard let me = currentUser else { return }
 
@@ -429,14 +409,8 @@ final class FriendsViewModel: ObservableObject {
             groupID: nil
         )
 
-        // Write shared doc — listener will update both phones
         upsertDirectExpense(expense)
-
-        NotificationManager.shared.sendPushNotification(
-            to: friend,
-            title: "Expense Added",
-            body: "\(me.name) added \"\(description)\" for ₹\(amount) with you."
-        )
+        // ✅ Push handled by Firestore trigger
     }
 
     func editDirectExpense(expense: Expense, to friend: User, amount: Double, description: String, paidByMe: Bool, date: Date) {
@@ -452,12 +426,7 @@ final class FriendsViewModel: ObservableObject {
         updated.date = date
 
         upsertDirectExpense(updated)
-
-        NotificationManager.shared.sendPushNotification(
-            to: friend,
-            title: "Expense Edited",
-            body: "\(me.name) edited \"\(description)\" for ₹\(amount) with you."
-        )
+        // ✅ Push handled by Firestore trigger
     }
 
     func settleUpWith(friend: User, method: SettleMethod = .other, note: String? = nil) {
