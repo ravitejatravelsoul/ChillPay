@@ -18,6 +18,9 @@ struct GroupSettingsSheet: View {
     @State private var inviteLink: String = ""
     @State private var qrImage: UIImage?
 
+    /// Provides currency formatting for group balances and settlements.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -233,7 +236,9 @@ struct GroupSettingsSheet: View {
                     Text(user.name)
                         .foregroundColor(.white)
                     Spacer()
-                    Text("\(bal < 0 ? "-" : "")\(group.currency.symbol)\(abs(bal), specifier: "%.2f")")
+                    // Format balance using the group's currency while preserving sign
+                    let formattedBalance = currencyManager.format(amount: abs(bal), in: group.currency)
+                    Text("\(bal < 0 ? "-" : "")\(formattedBalance)")
                         .foregroundColor(bal < 0 ? .red : .green)
                 }
             }
@@ -254,7 +259,9 @@ struct GroupSettingsSheet: View {
                     .foregroundColor(.green)
             } else {
                 ForEach(Array(settlements.enumerated()), id: \.offset) { _, s in
-                    Text("\(s.payer.name) pays \(s.payee.name) \(group.currency.symbol)\(String(format: "%.2f", s.amount))")
+                    // Format settlement amount using the group's currency
+                    let formattedAmount = currencyManager.format(amount: s.amount, in: group.currency)
+                    Text("\(s.payer.name) pays \(s.payee.name) \(formattedAmount)")
                         .foregroundColor(.white)
                 }
             }

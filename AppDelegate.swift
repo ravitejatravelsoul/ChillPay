@@ -5,14 +5,18 @@ import FirebaseAuth
 import FirebaseFirestore
 import UserNotifications
 
+#if !DEBUG
+private func print(_ items: Any..., separator: String = " ", terminator: String = "\n") {}
+#endif
+
 class AppDelegate: NSObject,
                    UIApplicationDelegate,
                    UNUserNotificationCenterDelegate,
                    MessagingDelegate {
 
-    // Cache token until user is logged in
     private var pendingFCMToken: String?
-    private var lastSavedToken: String?
+    private var lastHandledToken: String?
+    private var lastSavedTokenForUid: [String: String] = [:] // track per user in-session
 
     func application(
         _ application: UIApplication,
@@ -22,14 +26,11 @@ class AppDelegate: NSObject,
         FirebaseApp.configure()
         print("🔥 Firebase configured")
 
-        // Delegates
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
 
-        // Ask for permission + APNs
         requestNotificationPermissionAndRegister()
 
-        // Save token after auth becomes available
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self = self else { return }
             if let user = user {
@@ -47,7 +48,7 @@ class AppDelegate: NSObject,
         return true
     }
 
-    // MARK: - Notification permission + APNs registration
+    // MARK: - Permission + APNs registration
     private func requestNotificationPermissionAndRegister() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             print("🔔 Notification settings (before prompt): auth=\(settings.authorizationStatus.rawValue), alert=\(settings.alertSetting.rawValue), sound=\(settings.soundSetting.rawValue), badge=\(settings.badgeSetting.rawValue)")
@@ -81,7 +82,7 @@ class AppDelegate: NSObject,
         let apnsTokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("🍏 APNs device token: \(apnsTokenString)")
 
-        // Tell Firebase Messaging about the APNs token
+        // IMPORTANT: Always set APNs token on Messaging
         Messaging.messaging().apnsToken = deviceToken
 
         // Fetch FCM token AFTER APNs token is set
@@ -100,7 +101,6 @@ class AppDelegate: NSObject,
         }
     }
 
-    // MARK: - APNs FAIL
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("🟥🟥🟥 APNs FAIL CALLBACK HIT 🟥🟥🟥 \(error.localizedDescription)")
@@ -118,11 +118,12 @@ class AppDelegate: NSObject,
     }
 
     private func handleToken(_ token: String) {
-        if lastSavedToken == token {
-            print("ℹ️ Same token already handled in this session -> skip save")
+        // Only skip if we handled this token already in this session
+        if lastHandledToken == token {
+            print("ℹ️ Same token already handled in this session -> skip")
             return
         }
-        lastSavedToken = token
+        lastHandledToken = token
 
         guard Auth.auth().currentUser != nil else {
             print("⚠️ No logged-in user yet. Caching token to save after login.")
@@ -133,7 +134,9 @@ class AppDelegate: NSObject,
         saveFCMTokenToFirestore(token)
     }
 
-    // MARK: - Save token for MULTI-DEVICE support
+    // MARK: - ✅ Save token in server-compatible format
+    // Cloud Function currently reads pushTokens doc IDs as tokens.
+    // Therefore: users/{uid}/pushTokens/{FCM_TOKEN}  ✅
     private func saveFCMTokenToFirestore(_ token: String) {
         guard let uid = Auth.auth().currentUser?.uid else {
             print("⚠️ No logged-in user. Skipping FCM token save.")
@@ -141,32 +144,49 @@ class AppDelegate: NSObject,
             return
         }
 
+        // Avoid redundant writes per user in-session
+        if lastSavedTokenForUid[uid] == token {
+            print("ℹ️ Same token already saved for this uid in this session -> skip")
+            return
+        }
+        lastSavedTokenForUid[uid] = token
+
         let db = Firestore.firestore()
-        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "unknown-device"
+
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
         let deviceName = UIDevice.current.name
 
+        let tokensRef = db.collection("users")
+            .document(uid)
+            .collection("pushTokens")
+
+        // ✅ Canonical storage: docID == token (matches index.js getUserTokens())
         let data: [String: Any] = [
-            "token": token,
+            "token": token,            // keep field too (helps for backward-compat queries)
             "platform": "iOS",
             "deviceId": deviceId,
             "deviceName": deviceName,
             "updatedAt": FieldValue.serverTimestamp()
         ]
 
-        db.collection("users")
-            .document(uid)
-            .collection("pushTokens")
-            .document(token)
-            .setData(data, merge: true) { error in
-                if let error = error {
-                    print("❌ Failed saving FCM token: \(error.localizedDescription)")
-                } else {
-                    print("✅ Saved FCM token to Firestore (multi-device): \(token)")
-                }
+        tokensRef.document(token).setData(data, merge: true) { error in
+            if let error = error {
+                print("❌ Failed saving FCM token (docID=token): \(error.localizedDescription)")
+            } else {
+                print("✅ Saved FCM token to Firestore (docID=token): \(token)")
             }
+        }
+
+        // 🧹 Cleanup old format: deviceId-docs that contain this same token
+        tokensRef.whereField("token", isEqualTo: token).getDocuments { snapshot, _ in
+            guard let docs = snapshot?.documents else { return }
+            for doc in docs where doc.documentID != token {
+                tokensRef.document(doc.documentID).delete(completion: nil)
+            }
+        }
     }
 
-    // MARK: - Foreground notifications (show banner while app is open)
+    // MARK: - Foreground notifications
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,

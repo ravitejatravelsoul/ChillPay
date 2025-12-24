@@ -5,6 +5,10 @@ struct DashboardView: View {
     @EnvironmentObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
 
+    // ✅ FIX: Do NOT rely on EnvironmentObject (was missing in some flows & causing crash)
+    // CurrencyManager is a singleton anyway, so this is safe and reactive.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     @State private var recentActivities: [Activity] = []
 
     // MARK: - Derived Data
@@ -55,16 +59,12 @@ struct DashboardView: View {
         return value > 0 ? value : 0
     }
 
-    var currencySymbol: String {
-        groupVM.groups.first?.currency.symbol ?? "$"
-    }
-
+    /// Formats an amount using the user's preferred currency settings.  Amounts may
+    /// originate from multiple group currencies; this helper simply delegates
+    /// formatting to `CurrencyManager` and does not convert.  Negative values
+    /// are handled automatically.
     func formattedAmount(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = currencySymbol
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "\(currencySymbol)\(String(format: "%.2f", amount))"
+        currencyManager.format(amount: amount)
     }
 
     // MARK: - View Body
@@ -157,18 +157,23 @@ struct DashboardView: View {
     // MARK: - Helpers
     private func updateRecentActivity() {
         let merged = groupVM.globalActivity +
-                     friendsVM.directExpenses.map {
-                         let formattedAmount = String(format: "%.2f", $0.amount)
+                     friendsVM.directExpenses.map { exp in
+                         // Format the amount using the user's currency.  Direct
+                         // expenses are assumed to be in the user's currency since
+                         // they are not tied to any group.
+                         let formattedAmount = currencyManager.format(amount: exp.amount)
                          return Activity(
-                             id: $0.id,
-                             text: "\($0.paidBy.name) paid \(formattedAmount) for \($0.title)",
-                             date: $0.date
+                             id: exp.id,
+                             text: "\(exp.paidBy.name) paid \(formattedAmount) for \(exp.title)",
+                             date: exp.date
                          )
                      }
 
         recentActivities = merged.sorted { $0.date > $1.date }
 
+        #if DEBUG
         print("DEBUG: [DashboardView] recentActivities refreshed — count:", recentActivities.count)
+        #endif
     }
 }
 

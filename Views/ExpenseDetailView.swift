@@ -17,6 +17,9 @@ struct ExpenseDetailView: View {
     @State private var showDatePicker: Bool = false
     @State private var showSettleAlert: Bool = false
 
+    /// Use the currency manager to format amounts for the group currency and the user currency.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     // Remove isSettled from @State; use computed property or model value
 
     init(groupVM: GroupViewModel, group: Group, expense: Expense) {
@@ -51,8 +54,9 @@ struct ExpenseDetailView: View {
                             }
                             HStack {
                                 Text("Amount:").bold()
-                                let amountString = String(format: "%.2f", currentExpense.amount)
-                                Text("\(group.currency.symbol)\(amountString)")
+                                // Format the amount using the group's currency for clarity
+                                let formattedAmount = currencyManager.format(amount: currentExpense.amount, in: group.currency)
+                                Text(formattedAmount)
                             }
                             HStack {
                                 Text("Category:").bold()
@@ -251,7 +255,9 @@ struct ExpenseDetailView: View {
         let payer = currentExpense.paidBy
         var info: [String] = []
         for p in currentExpense.participants where p.id != payer.id {
-            info.append("\(p.name) owes \(payer.name) \(group.currency.symbol)\(String(format: "%.2f", share))")
+            // Format each person's share in the group's currency using the currency manager
+            let formattedShare = currencyManager.format(amount: share, in: group.currency)
+            info.append("\(p.name) owes \(payer.name) \(formattedShare)")
         }
         return info.isEmpty ? nil : info
     }

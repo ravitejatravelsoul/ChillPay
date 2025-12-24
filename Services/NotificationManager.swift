@@ -1,6 +1,13 @@
 import Foundation
 import UserNotifications
 
+// Disable printing in release builds by shadowing `print` when not
+// compiling with the `DEBUG` flag. This keeps debug logs from shipping to
+// production without touching individual log statements.
+#if !DEBUG
+private func print(_ items: Any..., separator: String = " ", terminator: String = "\n") {}
+#endif
+
 final class NotificationManager {
     static let shared = NotificationManager()
     private init() {}

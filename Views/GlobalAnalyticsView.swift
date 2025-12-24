@@ -26,6 +26,7 @@ enum AnalyticsTimeRange: String, CaseIterable, Identifiable {
 struct GlobalAnalyticsView: View {
     @EnvironmentObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
+    @ObservedObject private var currencyManager = CurrencyManager.shared
 
     @State private var combinedExpenses: [Expense] = []
     @State private var refreshCancellable: AnyCancellable?
@@ -37,14 +38,18 @@ struct GlobalAnalyticsView: View {
         Array(Set(groupVM.groups.flatMap { $0.members })) + Array(Set(friendsVM.friends))
     }
 
-    private var currencySymbol: String {
-        groupVM.groups.first?.currency.symbol ?? "$"
-    }
-
     private var categoryTotals: [CategoryTotal] {
         var dict = [ExpenseCategory: Double]()
         for exp in combinedExpenses where exp.amount.isFinite && exp.amount > 0 {
-            dict[exp.category, default: 0] += exp.amount
+            // Determine currency of expense: use group's currency when groupID is present
+            var convertedAmount = exp.amount
+            if let gid = exp.groupID {
+                // groupID is stored as UUID in Expense, while Group.id is a String.
+                if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    convertedAmount = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            dict[exp.category, default: 0] += convertedAmount
         }
         let array = dict.map { CategoryTotal(category: $0.key, total: $0.value) }
         return array.sorted { $0.total > $1.total }
@@ -53,14 +58,29 @@ struct GlobalAnalyticsView: View {
     private var memberTotals: [MemberTotal] {
         var dict = [User: Double]()
         for exp in combinedExpenses where exp.amount.isFinite && exp.amount > 0 {
-            dict[exp.paidBy, default: 0] += exp.amount
+            var convertedAmount = exp.amount
+            if let gid = exp.groupID {
+                if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    convertedAmount = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            dict[exp.paidBy, default: 0] += convertedAmount
         }
         let array = dict.map { MemberTotal(user: $0.key, total: $0.value) }
         return array.sorted { $0.total > $1.total }
     }
 
     private var totalSpent: Double {
-        combinedExpenses.reduce(0) { $0 + max(0, $1.amount) }
+        combinedExpenses.reduce(0) { partial, exp in
+            guard exp.amount.isFinite, exp.amount > 0 else { return partial }
+            var converted = exp.amount
+            if let gid = exp.groupID {
+                if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    converted = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            return partial + converted
+        }
     }
 
     private var averagePerMember: Double {
@@ -98,13 +118,13 @@ struct GlobalAnalyticsView: View {
                         Text("Summary")
                             .font(.headline)
                             .foregroundColor(ChillTheme.darkText)
-                        Text("Total spent: \(currencySymbol)\(String(format: "%.2f", totalSpent))")
+                        Text("Total spent: \(currencyManager.format(amount: totalSpent))")
                             .foregroundColor(ChillTheme.darkText)
                         Text("Total expenses: \(combinedExpenses.count)")
                             .foregroundColor(ChillTheme.darkText)
                         Text("Unique members: \(allUsers.count)")
                             .foregroundColor(ChillTheme.darkText)
-                        Text("Average per member: \(currencySymbol)\(String(format: "%.2f", averagePerMember))")
+                        Text("Average per member: \(currencyManager.format(amount: averagePerMember))")
                             .foregroundColor(ChillTheme.darkText)
                     }
                     .padding()
@@ -181,7 +201,9 @@ struct GlobalAnalyticsView: View {
             }
         }
         .onAppear {
+            #if DEBUG
             print("🟢 [GlobalAnalyticsView] onAppear – attaching observers")
+            #endif
             recomputeAnalytics()
             setupReactiveRefresh()
         }
@@ -213,6 +235,7 @@ struct GlobalAnalyticsView: View {
 
         combinedExpenses = merged
 
+        #if DEBUG
         print("""
         ✅ [GlobalAnalyticsView] recompute #\(debugCounter)
         - Range: \(selectedRange.rawValue)
@@ -221,6 +244,7 @@ struct GlobalAnalyticsView: View {
         - totalCombined (filtered): \(merged.count)
         - totalSpent: \(String(format: "%.2f", totalSpent))
         """)
+        #endif
     }
 
     private func setupReactiveRefresh() {
@@ -233,10 +257,14 @@ struct GlobalAnalyticsView: View {
         )
         .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
         .sink { source in
+            #if DEBUG
             print("⚡️ [GlobalAnalyticsView] Triggered by \(source)")
+            #endif
             recomputeAnalytics()
         }
 
+        #if DEBUG
         print("🟣 [GlobalAnalyticsView] Combine observers attached")
+        #endif
     }
 }

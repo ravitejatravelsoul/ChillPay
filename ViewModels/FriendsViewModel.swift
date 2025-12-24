@@ -33,7 +33,9 @@ final class FriendsViewModel: ObservableObject {
 
     @Published var currentUser: User? {
         didSet {
+            #if DEBUG
             print("DEBUG: [FriendsVM] currentUser didSet:", String(describing: currentUser))
+            #endif
             fetchFriends()
             startListeningToDirectExpenses()
             DispatchQueue.main.async { self.objectWillChange.send() }
@@ -75,7 +77,9 @@ final class FriendsViewModel: ObservableObject {
                 guard let self else { return }
 
                 if let error = error {
+                    #if DEBUG
                     print("❌ [FriendsVM] directExpenses listener error:", error.localizedDescription)
+                    #endif
                     return
                 }
 
@@ -299,7 +303,9 @@ final class FriendsViewModel: ObservableObject {
             return ids.contains(me.id) && ids.contains(friend.id)
         }
 
+        #if DEBUG
         print("DEBUG: Will clear \(toClear.count) shared directExpenses docs")
+        #endif
         for exp in toClear {
             deleteDirectExpense(exp)
         }

@@ -6,6 +6,7 @@ struct AnalyticsView: View {
     var group: Group
     @EnvironmentObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     @Environment(\.presentationMode) private var presentationMode
 
     @State private var allExpensesForAnalytics: [Expense] = []
@@ -15,7 +16,16 @@ struct AnalyticsView: View {
 
     // MARK: - Computed Metrics
     private var totalSpent: Double {
-        allExpensesForAnalytics.reduce(0) { $0 + max(0, $1.amount) }
+        allExpensesForAnalytics.reduce(0) { partial, exp in
+            guard exp.amount.isFinite && exp.amount > 0 else { return partial }
+            var converted = exp.amount
+			if let gid = exp.groupID {
+				if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    converted = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            return partial + converted
+        }
     }
 
     private var averagePerMember: Double {
@@ -27,7 +37,13 @@ struct AnalyticsView: View {
     private var categoryTotals: [(ExpenseCategory, Double)] {
         var dict: [ExpenseCategory: Double] = [:]
         for exp in allExpensesForAnalytics where exp.amount.isFinite && exp.amount > 0 {
-            dict[exp.category, default: 0] += exp.amount
+            var converted = exp.amount
+			if let gid = exp.groupID {
+				if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    converted = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            dict[exp.category, default: 0] += converted
         }
         return dict.sorted { $0.value > $1.value }
     }
@@ -35,13 +51,28 @@ struct AnalyticsView: View {
     private var memberTotals: [(User, Double)] {
         var dict: [User: Double] = [:]
         for exp in allExpensesForAnalytics where exp.amount.isFinite && exp.amount > 0 {
-            dict[exp.paidBy, default: 0] += exp.amount
+            var converted = exp.amount
+			if let gid = exp.groupID {
+				if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    converted = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            dict[exp.paidBy, default: 0] += converted
         }
         return dict.sorted { $0.value > $1.value }
     }
 
     private var globalTotalSpent: Double {
-        globalExpenses.reduce(0) { $0 + max(0, $1.amount) }
+        globalExpenses.reduce(0) { partial, exp in
+            guard exp.amount.isFinite && exp.amount > 0 else { return partial }
+            var converted = exp.amount
+			if let gid = exp.groupID {
+				if let group = groupVM.groups.first(where: { $0.id == gid.uuidString }) {
+                    converted = currencyManager.convert(amount: exp.amount, from: group.currency)
+                }
+            }
+            return partial + converted
+        }
     }
 
     private var globalExpenseCount: Int {
@@ -57,7 +88,7 @@ struct AnalyticsView: View {
                     // --- Global Overview ---
                     GroupBox(label: Text("Global Overview").font(.headline).foregroundColor(ChillTheme.darkText)) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", globalTotalSpent))")
+                            Text("Total spent: \(currencyManager.format(amount: globalTotalSpent))")
                                 .foregroundColor(ChillTheme.darkText)
                             Text("Total entries: \(globalExpenseCount)")
                                 .foregroundColor(ChillTheme.darkText)
@@ -68,11 +99,11 @@ struct AnalyticsView: View {
                     // --- Group Summary ---
                     GroupBox(label: Text("Group Summary (\(group.name))").font(.headline).foregroundColor(ChillTheme.darkText)) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Total spent: \(group.currency.symbol)\(String(format: "%.2f", totalSpent))")
+                            Text("Total spent: \(currencyManager.format(amount: totalSpent))")
                                 .foregroundColor(ChillTheme.darkText)
                             Text("Expenses: \(allExpensesForAnalytics.count)")
                                 .foregroundColor(ChillTheme.darkText)
-                            Text("Avg/member: \(group.currency.symbol)\(String(format: "%.2f", averagePerMember))")
+                            Text("Avg/member: \(currencyManager.format(amount: averagePerMember))")
                                 .foregroundColor(ChillTheme.darkText)
                         }
                         .padding(.vertical, 4)
@@ -132,7 +163,9 @@ struct AnalyticsView: View {
             }
         }
         .onAppear {
+            #if DEBUG
             print("🟢 [AnalyticsView] onAppear — setting up observers")
+            #endif
             recomputeAnalytics()
             setupReactiveRefresh()
         }
@@ -156,6 +189,7 @@ struct AnalyticsView: View {
         globalExpenses = (allGroupExpenses + friendsVM.directExpenses)
             .filter { $0.amount.isFinite && $0.amount >= 0 }
 
+        #if DEBUG
         print("""
         ✅ [AnalyticsView] recompute #\(debugCounter)
         - groupExpenses: \(group.expenses.count)
@@ -163,6 +197,7 @@ struct AnalyticsView: View {
         - allExpensesForAnalytics: \(allExpensesForAnalytics.count)
         - globalExpenses total: \(globalExpenses.count)
         """)
+        #endif
     }
 
     private func setupReactiveRefresh() {
@@ -177,10 +212,14 @@ struct AnalyticsView: View {
         refreshCancellable = Publishers.MergeMany(sources)
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { source in
+                #if DEBUG
                 print("⚡️ [AnalyticsView] Triggered by \(source)")
+                #endif
                 recomputeAnalytics()
             }
 
+        #if DEBUG
         print("🟣 [AnalyticsView] Combine observers attached")
+        #endif
     }
 }

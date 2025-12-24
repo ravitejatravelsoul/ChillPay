@@ -11,6 +11,22 @@ struct ProfileEditView: View {
     @State private var bio: String = AuthService.shared.user?.bio ?? ""
     @State private var errorMessage: String?
 
+    // Country & Currency selection. Initialize from the user profile or device locale.
+    @State private var selectedCurrencyOption: CountryCurrencyOption = {
+        let options: [CountryCurrencyOption] = [
+            CountryCurrencyOption(countryCode: "US", currencyCode: "USD", countryName: "United States", currencySymbol: "$"),
+            CountryCurrencyOption(countryCode: "IN", currencyCode: "INR", countryName: "India", currencySymbol: "₹"),
+            CountryCurrencyOption(countryCode: "GB", currencyCode: "GBP", countryName: "United Kingdom", currencySymbol: "£"),
+            CountryCurrencyOption(countryCode: "CA", currencyCode: "CAD", countryName: "Canada", currencySymbol: "C$"),
+            CountryCurrencyOption(countryCode: "AU", currencyCode: "AUD", countryName: "Australia", currencySymbol: "A$"),
+            CountryCurrencyOption(countryCode: "EU", currencyCode: "EUR", countryName: "Eurozone", currencySymbol: "€")
+        ]
+        let defaults = CurrencyManager.deviceCountryAndCurrencyDefaults()
+        let cc = AuthService.shared.user?.countryCode ?? defaults.country
+        let cur = AuthService.shared.user?.currencyCode ?? defaults.currency
+        return options.first(where: { $0.countryCode == cc && $0.currencyCode == cur }) ?? options.first!
+    }()
+
     // Tracks whether the avatar has been modified from its initial value. When true,
     // enables the "Save Avatar" button.
     @State private var avatarChanged: Bool = false
@@ -41,6 +57,14 @@ struct ProfileEditView: View {
                     // DiceBear Avatar Picker (replace EmojiAvatarPicker if not needed anymore)
                     AvatarPickerView(avatarSeed: $avatarSeed, avatarStyle: $avatarStyle)
                         .padding(.horizontal, 4)
+
+                    // Country & Currency selection
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Country & Currency")
+                            .font(.headline)
+                            .foregroundColor(ChillTheme.darkText.opacity(0.85))
+                        CountryCurrencyPicker(selection: $selectedCurrencyOption)
+                    }
 
                     // Save Avatar button and feedback
                     Button(action: saveAvatarIfNeeded) {
@@ -82,6 +106,11 @@ struct ProfileEditView: View {
                             avatar: selectedAvatar ?? "",
                             avatarSeed: avatarSeed,
                             avatarStyle: avatarStyle
+                        )
+                        // Update currency preferences if changed
+                        authService.updateCurrency(
+                            countryCode: selectedCurrencyOption.countryCode,
+                            currencyCode: selectedCurrencyOption.currencyCode
                         )
                         // Dismiss after saving profile
                         presentationMode.wrappedValue.dismiss()

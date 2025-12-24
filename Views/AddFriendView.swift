@@ -84,7 +84,9 @@ struct AddFriendView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
             case .failure(let error):
+                #if DEBUG
                 print("Add friend error: \(error.localizedDescription)")
+                #endif
                 errorMsg = "Couldn’t add friend. Please check the email and try again."
             }
         }

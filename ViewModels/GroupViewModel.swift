@@ -191,7 +191,9 @@ final class GroupViewModel: ObservableObject {
                 guard let self else { return }
 
                 if let error = error {
+                    #if DEBUG
                     print("❌ Error listening for groups: \(error.localizedDescription)")
+                    #endif
                     DispatchQueue.main.async { self.isLoadingGroups = false }
                     return
                 }
@@ -250,7 +252,9 @@ final class GroupViewModel: ObservableObject {
                 guard let self else { return }
 
                 if let error = error {
+                    #if DEBUG
                     print("❌ Error listening expenses for group \(groupId): \(error.localizedDescription)")
+                    #endif
                     return
                 }
 
@@ -289,9 +293,11 @@ final class GroupViewModel: ObservableObject {
         // Ensure id exists for parsing
         data["id"] = group.id
 
-        // IMPORTANT: do not rely on embedding huge expenses array.
-        // If your Group.toDict includes expenses, you can strip it:
-        data["expenses"] = nil
+        // IMPORTANT:
+        // Expenses live in the subcollection `groups/{groupId}/expenses`.
+        // If we omit the field entirely, older decoding logic can fail.
+        // Store an empty array here; the real expenses are loaded via the listener.
+        data["expenses"] = []
 
         db.collection("groups").document(group.id).setData(data, merge: true)
     }
@@ -333,10 +339,13 @@ final class GroupViewModel: ObservableObject {
 
     // MARK: - Export/Invite
     func exportCSV(for group: Group) -> URL? {
-        let header = "Title,Amount,PaidBy,Participants,Date,Category\n"
+        // Include the currency code in the Amount header to clarify the unit used
+        let header = "Title,Amount (" + group.currency.rawValue.uppercased() + "),PaidBy,Participants,Date,Category\n"
         let rows = group.expenses.map { expense in
             let participants = expense.participants.map { $0.name }.joined(separator: "|")
-            return "\"\(expense.title)\",\(expense.amount),\"\(expense.paidBy.name)\",\"\(participants)\",\(expense.date),\(expense.category.rawValue)"
+            // Format the amount using the group's currency and the global currency manager
+            let formattedAmount = CurrencyManager.shared.format(amount: expense.amount, in: group.currency)
+            return "\"" + expense.title + "\"," + formattedAmount + ",\"" + expense.paidBy.name + "\",\"" + participants + "\"," + String(describing: expense.date) + "," + expense.category.rawValue
         }
         let csv = header + rows.joined(separator: "\n")
         let filename = "\(group.name)-expenses.csv"
@@ -346,7 +355,9 @@ final class GroupViewModel: ObservableObject {
             try csv.write(to: fileURL, atomically: true, encoding: .utf8)
             return fileURL
         } catch {
+            #if DEBUG
             print("CSV Export error: \(error)")
+            #endif
             return nil
         }
     }

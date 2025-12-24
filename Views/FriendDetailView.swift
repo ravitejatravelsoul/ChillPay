@@ -16,6 +16,9 @@ struct FriendDetailView: View {
     @State private var celebrationMessage = ""
     @Environment(\.presentationMode) private var presentationMode
 
+    /// Access the currency manager for formatting balances and expenses.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     var isSettled: Bool {
         abs(balance) < 0.01
     }
@@ -52,11 +55,11 @@ struct FriendDetailView: View {
                         Text("Balance with \(friend.name):")
                             .foregroundColor(.secondary)
                         if balance < -epsilon {
-                            Text("You owe ₹\(String(format: "%.2f", abs(balance)))")
+                            Text("You owe \(currencyManager.format(amount: abs(balance)))")
                                 .foregroundColor(.red)
                                 .font(.title.bold())
                         } else if balance > epsilon {
-                            Text("\(friend.name) owes you ₹\(String(format: "%.2f", abs(balance)))")
+                            Text("\(friend.name) owes you \(currencyManager.format(amount: abs(balance)))")
                                 .foregroundColor(.green)
                                 .font(.title.bold())
                         } else {
@@ -204,6 +207,7 @@ struct FriendExpenseRow: View {
 
     var isDirect: Bool { expense.groupID == nil }
     var canEdit: Bool { expense.paidBy.id == currentUser.id }
+    @ObservedObject private var currencyManager = CurrencyManager.shared
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -219,7 +223,8 @@ struct FriendExpenseRow: View {
                 Text(expense.title)
                     .font(.headline)
                     .foregroundColor(.white)
-                Text("Amount: ₹\(String(format: "%.2f", expense.amount))")
+                // Format amount using the user's currency to ensure consistency
+                Text("Amount: \(currencyManager.format(amount: expense.amount))")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 Text("Paid by \(expense.paidBy.name)\(isDirect ? "" : " (group)")")

@@ -42,23 +42,28 @@ struct Group: Identifiable, Hashable, Codable {
     /// expenses, activity, adjustments) back into their respective model
     /// objects.  If mandatory fields are missing, it returns `nil`.
     static func fromDict(_ dict: [String: Any]) -> Group? {
+        // Be resilient to missing fields in older docs or docs where we purposely
+        // don't embed large arrays (expenses live in a subcollection).
         guard
             let id = dict["id"] as? String,
             let name = dict["name"] as? String,
-            let membersArr = dict["members"] as? [[String: Any]],
-            let expensesArr = dict["expenses"] as? [[String: Any]],
-            let isPublic = dict["isPublic"] as? Bool,
-            let currencyRaw = dict["currency"] as? String,
-            let currency = Currency(rawValue: currencyRaw),
-            let colorName = dict["colorName"] as? String,
-            let iconName = dict["iconName"] as? String,
-            let adjustmentsArr = dict["adjustments"] as? [[String: Any]],
-            let simplifyDebts = dict["simplifyDebts"] as? Bool
-        else {
-            return nil
-        }
+            let membersArr = dict["members"] as? [[String: Any]]
+        else { return nil }
+
+        let expensesArr = dict["expenses"] as? [[String: Any]] ?? []
+        let isPublic = dict["isPublic"] as? Bool ?? false
+
+        let currencyRaw = dict["currency"] as? String
+        let currency = currencyRaw.flatMap { Currency(rawValue: $0) } ?? .usd
+
+        let colorName = dict["colorName"] as? String ?? "blue"
+        let iconName = dict["iconName"] as? String ?? "person.3.fill"
+        let adjustmentsArr = dict["adjustments"] as? [[String: Any]] ?? []
+        let simplifyDebts = dict["simplifyDebts"] as? Bool ?? false
+
         let budget = dict["budget"] as? Double
         let activityArr = dict["activity"] as? [[String: Any]] ?? []
+
         // Convert nested dictionaries back to model objects
         let members: [User] = membersArr.compactMap { User.fromDict($0) }
         let expenses: [Expense] = expensesArr.compactMap { Expense.fromDict($0) }

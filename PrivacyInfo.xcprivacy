@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        This privacy manifest declares the system APIs that ChillPay accesses and
+        provides justifications for their use. Apple requires apps to include
+        this file starting with Xcode 15 when using certain protected APIs.
+
+        See: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
+    -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <!-- The app reads and writes small bits of user state using
+                 UserDefaults to persist groups locally on device. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: Store user preferences or app state across launches. -->
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

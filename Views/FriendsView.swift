@@ -22,6 +22,11 @@ enum ActiveSheet: Identifiable {
 struct FriendsView: View {
     @ObservedObject var friendsVM: FriendsViewModel = FriendsViewModel.shared
     @StateObject var groupVM = GroupViewModel(friendsVM: FriendsViewModel.shared)
+
+    /// ✅ FIX: Don't rely on EnvironmentObject (it can be missing and crash).
+    /// CurrencyManager is a singleton, so observe it directly.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     @State private var searchText = ""
     @State private var showAddFriendSheet = false
     @State private var sortByOwesYou = false
@@ -50,27 +55,45 @@ struct FriendsView: View {
         let direct = friendsVM.directExpenses.filter {
             $0.participants.contains(where: { $0.id == friend.id })
         }
-        let group = groupVM.groups.flatMap { $0.expenses }
+        let groupExps = groupVM.groups.flatMap { $0.expenses }
             .filter { $0.participants.contains(where: { $0.id == friend.id }) }
-        return (direct + group).sorted { $0.date > $1.date }
+        return (direct + groupExps).sorted { $0.date > $1.date }
     }
 
     func balanceWith(friend: User) -> Double {
         guard let me = friendsVM.currentUser else { return 0 }
         var balance: Double = 0
-        // direct
+
+        // direct expenses are recorded in user currency; convert if necessary
         for e in friendsVM.directExpenses where e.participants.contains(where: { $0.id == friend.id }) {
             let share = e.amount / Double(e.participants.count)
-            if e.paidBy.id == me.id { balance += share * Double(e.participants.count - 1) }
-            else if e.paidBy.id == friend.id { balance -= share }
+            if e.paidBy.id == me.id {
+                // I paid for others, so friend owes me share * (participants - 1)
+                balance += share * Double(e.participants.count - 1)
+            } else if e.paidBy.id == friend.id {
+                // Friend paid my share, so I owe friend
+                balance -= share
+            }
         }
-        // group
-        for e in groupVM.groups.flatMap({ $0.expenses })
-        where e.participants.contains(where: { $0.id == friend.id }) {
-            let share = e.amount / Double(e.participants.count)
-            if e.paidBy.id == me.id { balance += share * Double(e.participants.count - 1) }
-            else if e.paidBy.id == friend.id { balance -= share }
+
+        // group expenses may have a currency different from the user's. Convert each
+        // group's expenses to the user's currency using the group's currency.
+        for g in groupVM.groups {
+            for e in g.expenses where e.participants.contains(where: { $0.id == friend.id }) {
+                let share = e.amount / Double(e.participants.count)
+                // Convert from the group's currency to the user's currency
+                let convertedShare = currencyManager.convert(amount: share, from: g.currency)
+
+                if e.paidBy.id == me.id {
+                    // I paid the whole amount; each participant owes me their share
+                    balance += convertedShare * Double(e.participants.count - 1)
+                } else if e.paidBy.id == friend.id {
+                    // Friend paid; I owe friend my share
+                    balance -= convertedShare
+                }
+            }
         }
+
         return balance
     }
 
@@ -219,38 +242,42 @@ struct SelfSummaryCard: View {
     let user: User
     let summary: (owe: Double, owed: Double)
 
+    /// ✅ FIX: Use singleton directly instead of EnvironmentObject
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     var body: some View {
         VStack {
             HStack {
-                // Use unified AvatarView for the current user
-                    AvatarView(user: user)
-                        .frame(width: 44, height: 44)
-                    VStack(alignment: .leading) {
-                        Text(user.name)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(ChillTheme.darkText)
-                        if let email = user.email {
-                            Text(email)
-                                .font(.system(size: 14))
-                                .foregroundColor(ChillTheme.darkText.opacity(0.6))
-                        }
+                AvatarView(user: user)
+                    .frame(width: 44, height: 44)
+
+                VStack(alignment: .leading) {
+                    Text(user.name)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(ChillTheme.darkText)
+                    if let email = user.email {
+                        Text(email)
+                            .font(.system(size: 14))
+                            .foregroundColor(ChillTheme.darkText.opacity(0.6))
                     }
+                }
                 Spacer()
             }
             .padding(.bottom, 6)
 
-                if summary.owe < -0.01 {
-                    Text("You owe others ₹\(String(format: "%.2f", abs(summary.owe)))")
-                        .foregroundColor(.red)
-                }
-                if summary.owed > 0.01 {
-                    Text("Others owe you ₹\(String(format: "%.2f", abs(summary.owed)))")
-                        .foregroundColor(.green)
-                }
-                if summary.owe >= -0.01 && summary.owed <= 0.01 {
-                    Text("All settled!")
-                        .foregroundColor(ChillTheme.darkText.opacity(0.5))
-                }
+            // Format and display the amounts using the user's currency
+            if summary.owe < -0.01 {
+                Text("You owe others \(currencyManager.format(amount: abs(summary.owe)))")
+                    .foregroundColor(.red)
+            }
+            if summary.owed > 0.01 {
+                Text("Others owe you \(currencyManager.format(amount: abs(summary.owed)))")
+                    .foregroundColor(.green)
+            }
+            if summary.owe >= -0.01 && summary.owed <= 0.01 {
+                Text("All settled!")
+                    .foregroundColor(ChillTheme.darkText.opacity(0.5))
+            }
         }
         .font(.headline)
         .padding()
@@ -330,9 +357,11 @@ struct FriendRow: View {
     let allExpenses: [Expense]
     let balance: Double
 
+    /// ✅ FIX: Use singleton directly instead of EnvironmentObject
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     var body: some View {
         HStack(spacing: 16) {
-            // Use unified AvatarView for each friend
             AvatarView(user: friend)
                 .frame(width: 44, height: 44)
 
@@ -340,11 +369,13 @@ struct FriendRow: View {
                 Text(friend.name)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(ChillTheme.darkText)
+
                 if let email = friend.email {
                     Text(email)
                         .font(.system(size: 14))
                         .foregroundColor(ChillTheme.darkText.opacity(0.6))
                 }
+
                 Text("Expenses: \(allExpenses.count)")
                     .font(.caption)
                     .foregroundColor(ChillTheme.darkText.opacity(0.6))
@@ -356,13 +387,13 @@ struct FriendRow: View {
             if balance < -epsilon {
                 VStack(alignment: .trailing) {
                     Text("You owe")
-                    Text("₹\(String(format: "%.2f", abs(balance)))")
+                    Text(currencyManager.format(amount: abs(balance)))
                 }
                 .foregroundColor(.red)
             } else if balance > epsilon {
                 VStack(alignment: .trailing) {
                     Text("Owes you")
-                    Text("₹\(String(format: "%.2f", abs(balance)))")
+                    Text(currencyManager.format(amount: abs(balance)))
                 }
                 .foregroundColor(.green)
             } else {
@@ -374,5 +405,3 @@ struct FriendRow: View {
         .padding(.vertical, 10)
     }
 }
-
-// The avatar colour and initial helpers are now provided by the User model itself.

@@ -14,6 +14,26 @@ struct SignupView: View {
     @State private var avatarSeed = "raviteja"
     @State private var avatarStyle = "adventurer"
 
+    // Country & currency selection
+    @State private var selectedCurrencyOption: CountryCurrencyOption = {
+        // Determine the default option based on the device locale.  If no matching
+        // option exists, fall back to US/USD.
+        let defaults = CurrencyManager.deviceCountryAndCurrencyDefaults()
+        let country = defaults.country
+        let currency = defaults.currency
+        // Use a temporary list to search defaults; this duplicates the
+        // options defined in CountryCurrencyPicker for convenience.
+        let options: [CountryCurrencyOption] = [
+            CountryCurrencyOption(countryCode: "US", currencyCode: "USD", countryName: "United States", currencySymbol: "$"),
+            CountryCurrencyOption(countryCode: "IN", currencyCode: "INR", countryName: "India", currencySymbol: "₹"),
+            CountryCurrencyOption(countryCode: "GB", currencyCode: "GBP", countryName: "United Kingdom", currencySymbol: "£"),
+            CountryCurrencyOption(countryCode: "CA", currencyCode: "CAD", countryName: "Canada", currencySymbol: "C$"),
+            CountryCurrencyOption(countryCode: "AU", currencyCode: "AUD", countryName: "Australia", currencySymbol: "A$"),
+            CountryCurrencyOption(countryCode: "EU", currencyCode: "EUR", countryName: "Eurozone", currencySymbol: "€")
+        ]
+        return options.first(where: { $0.countryCode == country && $0.currencyCode == currency }) ?? options.first!
+    }()
+
     @State private var errorMessage: String?
     var onSignupSuccess: () -> Void
     var onBack: () -> Void
@@ -40,6 +60,15 @@ struct SignupView: View {
                             .foregroundColor(ChillTheme.darkText)
                         Toggle("Enable Face ID", isOn: $faceIDEnabled)
                             .foregroundColor(ChillTheme.darkText)
+
+                        // Country + Currency selection
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Country & Currency")
+                                .font(.headline)
+                                .foregroundColor(ChillTheme.darkText)
+                            CountryCurrencyPicker(selection: $selectedCurrencyOption)
+                        }
+
                         if let errorMessage = errorMessage {
                             Text(errorMessage)
                                 .foregroundColor(.red)
@@ -72,6 +101,8 @@ struct SignupView: View {
                             faceIDEnabled: faceIDEnabled,
                             avatarSeed: avatarSeed,
                             avatarStyle: avatarStyle,
+                            countryCode: selectedCurrencyOption.countryCode,
+                            currencyCode: selectedCurrencyOption.currencyCode,
                             onProfileCreated: {
                                 onSignupSuccess()
                             }

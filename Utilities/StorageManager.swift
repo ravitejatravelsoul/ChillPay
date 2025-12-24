@@ -15,7 +15,9 @@ class StorageManager {
             let data = try JSONEncoder().encode(groups)
             UserDefaults.standard.set(data, forKey: groupsKey)
         } catch {
+            #if DEBUG
             print("Failed to save groups: \(error)")
+            #endif
         }
     }
     
@@ -27,7 +29,9 @@ class StorageManager {
         do {
             return try JSONDecoder().decode([Group].self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode groups: \(error)")
+            #endif
             return []
         }
     }

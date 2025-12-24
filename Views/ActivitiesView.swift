@@ -5,6 +5,10 @@ struct ActivitiesView: View {
     @EnvironmentObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
 
+    /// ✅ FIX: Don't rely on EnvironmentObject (can be missing and crash).
+    /// CurrencyManager is a singleton, so observe it directly.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     @State private var combinedActivities: [Activity] = []
     @State private var refreshCancellable: AnyCancellable?
     @State private var debugCounter = 0
@@ -50,7 +54,9 @@ struct ActivitiesView: View {
             .navigationTitle("Activities")
         }
         .onAppear {
+            #if DEBUG
             print("🟢 [ActivitiesView] onAppear — setting up Combine updates")
+            #endif
             recomputeActivities()
             setupReactiveRefresh()
         }
@@ -65,9 +71,11 @@ struct ActivitiesView: View {
 
         // 🔹 2. Direct expenses → Convert into Activity entries
         let friendActivities: [Activity] = friendsVM.directExpenses.map { exp in
-            Activity(
+            // Format the direct expense amount using the user's currency
+            let formattedAmount = currencyManager.format(amount: exp.amount)
+            return Activity(
                 id: exp.id,
-                text: "\(exp.paidBy.name) paid \(String(format: "%.2f", exp.amount)) for \(exp.title)",
+                text: "\(exp.paidBy.name) paid \(formattedAmount) for \(exp.title)",
                 date: exp.date
             )
         }
@@ -78,12 +86,14 @@ struct ActivitiesView: View {
 
         combinedActivities = merged
 
+        #if DEBUG
         print("""
         ✅ [ActivitiesView] recompute #\(debugCounter)
         - groupActivities: \(groupActivities.count)
         - friendActivities: \(friendActivities.count)
         - totalCombined: \(merged.count)
         """)
+        #endif
     }
 
     // MARK: - Combine Reactive Updates
@@ -97,11 +107,15 @@ struct ActivitiesView: View {
         )
         .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
         .sink { source in
+            #if DEBUG
             print("⚡️ [ActivitiesView] Triggered by \(source)")
+            #endif
             recomputeActivities()
         }
 
+        #if DEBUG
         print("🟣 [ActivitiesView] Combine observers attached")
+        #endif
     }
 }
 

@@ -45,20 +45,32 @@ struct CelebrationPopup: View {
     }
 
     private func playCelebrationSound() {
+        #if DEBUG
         print("DEBUG: playCelebrationSound called")
+        #endif
         guard let url = Bundle.main.url(forResource: "celebration", withExtension: "wav") else {
+            #if DEBUG
             print("DEBUG: Sound file not found in bundle!")
+            #endif
             return
         }
+        #if DEBUG
         print("DEBUG: Sound file found at \(url)")
+        #endif
         do {
             player = try AVAudioPlayer(contentsOf: url)
+            #if DEBUG
             print("DEBUG: AVAudioPlayer initialized")
+            #endif
             player?.volume = 0.7
             let played = player?.play() ?? false
+            #if DEBUG
             print("DEBUG: AVAudioPlayer play() called, result: \(played)")
+            #endif
         } catch {
+            #if DEBUG
             print("DEBUG: Error initializing AVAudioPlayer: \(error)")
+            #endif
         }
     }
 

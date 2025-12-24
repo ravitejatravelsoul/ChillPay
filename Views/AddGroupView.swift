@@ -16,10 +16,12 @@ struct AddGroupView: View {
 
     private var selectableMembers: [User] {
         var list: [User] = []
-        if let me = FriendsViewModel.shared.currentUser {
+        // Use the injected view model instance, not the singleton, to avoid cases
+        // where the singleton briefly becomes nil during auth refresh.
+        if let me = friendsVM.currentUser {
             list.append(me)
         }
-        let filteredFriends = friendsVM.friends.filter { $0.id != FriendsViewModel.shared.currentUser?.id }
+        let filteredFriends = friendsVM.friends.filter { $0.id != friendsVM.currentUser?.id }
         list.append(contentsOf: filteredFriends)
         return list
     }
@@ -63,7 +65,7 @@ struct AddGroupView: View {
                                     HStack {
                                         AvatarView(user: member)
                                             .frame(width: 30, height: 30)
-                                        Text(member.id == FriendsViewModel.shared.currentUser?.id ? "Me" : member.name)
+                                        Text(member.id == friendsVM.currentUser?.id ? "Me" : member.name)
                                             .foregroundColor(ChillTheme.darkText)
                                         Spacer()
                                         if selectedMembers.contains(member) {
@@ -197,7 +199,7 @@ struct AddGroupView: View {
 
     private func save() {
         var groupMembers = selectedMembers
-        if let me = FriendsViewModel.shared.currentUser {
+        if let me = friendsVM.currentUser {
             groupMembers.insert(me)
         }
         let budgetValue: Double? = Double(budgetString.trimmingCharacters(in: .whitespaces))

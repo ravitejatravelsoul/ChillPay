@@ -48,4 +48,26 @@ enum Currency: String, Codable, CaseIterable, Identifiable {
         let usdAmount = amount * conversionRateToUSD
         return usdAmount / to.conversionRateToUSD
     }
+
+    /// Attempt to map an ISO‑4217 currency code (e.g. "USD", "INR") to a known `Currency` case.
+    ///
+    /// This helper enables converting amounts for arbitrary user currencies using
+    /// the built‑in conversion rates defined in this enum.  If the code is not
+    /// recognized, `.other` is returned.
+    ///
+    /// - Parameter code: The ISO currency code, case‑insensitive.
+    /// - Returns: A matching `Currency` case, or `.other` for unknown codes.
+    static func from(code: String) -> Currency {
+        switch code.uppercased() {
+        case "USD": return .usd
+        case "INR": return .inr
+        case "EUR": return .eur
+        case "GBP": return .gbp
+        case "AUD": return .aud
+        case "JPY": return .jpy
+        case "CAD": return .cad
+        case "CHF": return .chf
+        default: return .other
+        }
+    }
 }

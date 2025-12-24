@@ -9,6 +9,9 @@ struct AddDirectExpenseView: View {
     @Environment(\.presentationMode) private var presentationMode
     @FocusState private var focusedField: Field?
 
+    /// Provides access to the user's selected currency and formatting utilities.
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+
     @State private var title: String
     @State private var amountString: String
     @State private var paidByMe: Bool
@@ -86,8 +89,8 @@ struct AddDirectExpenseView: View {
                             .focused($focusedField, equals: .title)
                     }
 
-                    // Amount
-                    Text("Amount")
+                    // Amount input displays the selected currency symbol to clarify the unit
+                    Text("Amount (\(currencyManager.symbol))")
                         .font(.headline)
                         .foregroundColor(ChillTheme.darkText)
                     ZStack(alignment: .leading) {

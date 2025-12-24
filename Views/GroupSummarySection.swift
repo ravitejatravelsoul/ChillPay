@@ -4,6 +4,7 @@ import SwiftUI
 struct GroupSummarySection: View {
     @ObservedObject var groupVM: GroupViewModel
     var group: Group
+    @ObservedObject private var currencyManager = CurrencyManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -14,11 +15,13 @@ struct GroupSummarySection: View {
                 let balances = expenseVM.getBalances(for: group)
                 ForEach(group.members, id: \.id) { user in
                     let bal = balances[user] ?? 0
-                    let absBal = abs(bal)
-                    let formatted = String(format: "%.2f", absBal)
-                    let sign = bal < 0 ? "-" : ""
-                    Text("\(user.name): \(sign)\(group.currency.symbol)\(formatted)")
-                        .foregroundColor(bal < 0 ? .red : .green)
+                    // Convert the balance into the user's currency
+                    let converted = currencyManager.convert(amount: bal, from: group.currency)
+                    let absBal = abs(converted)
+                    let sign = converted < 0 ? "-" : ""
+                    let formatted = currencyManager.format(amount: absBal)
+                    Text("\(user.name): \(sign)\(formatted)")
+                        .foregroundColor(converted < 0 ? .red : .green)
                         .font(.system(size: 17, weight: .semibold))
                 }
             }

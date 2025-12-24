@@ -24,6 +24,12 @@ struct UserProfile: Identifiable, Codable, Equatable {
     let lastActivityAt: Date
     let platform: String
 
+    /// ISO‑3166‑1 alpha‑2 country code (e.g. "US", "IN"). Used to build a locale for currency formatting.
+    var countryCode: String?
+
+    /// ISO‑4217 currency code (e.g. "USD", "INR"). Determines the user’s preferred currency.
+    var currencyCode: String?
+
     init(
         uid: String,
         name: String,
@@ -45,7 +51,9 @@ struct UserProfile: Identifiable, Codable, Equatable {
         settings: [String: Bool] = [:],
         deleted: Bool = false,
         lastActivityAt: Date = Date(),
-        platform: String = "iOS"
+        platform: String = "iOS",
+        countryCode: String? = nil,
+        currencyCode: String? = nil
     ) {
         self.id = uid
         self.uid = uid
@@ -69,5 +77,11 @@ struct UserProfile: Identifiable, Codable, Equatable {
         self.deleted = deleted
         self.lastActivityAt = lastActivityAt
         self.platform = platform
+
+        // Persist locale/currency preferences if supplied. These are optional so that
+        // legacy user documents continue to decode without crashing. When nil,
+        // the app falls back to the device’s locale in `AuthService.decodeUserProfile`.
+        self.countryCode = countryCode
+        self.currencyCode = currencyCode
     }
 }

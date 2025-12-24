@@ -3,6 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>aps-environment</key>
-	<string>development</string>
+    <!-- Use the production APNs environment for App Store releases. -->
+    <string>production</string>
 </dict>
 </plist>

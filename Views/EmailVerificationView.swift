@@ -100,7 +100,9 @@ struct EmailVerificationView: View {
 
         user.sendEmailVerification { error in
             if let error = error {
+                #if DEBUG
                 print("Resend verification error: \(error.localizedDescription)")
+                #endif
                 errorMessage = "We couldn’t resend the email. Please try again in a moment."
                 remainingSeconds = 10
                 startCountdown()

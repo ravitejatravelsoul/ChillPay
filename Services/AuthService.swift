@@ -2,6 +2,15 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
+// Silence all `print` statements in release builds for this file. Declaring a
+// local `print` function when `DEBUG` is not set will shadow the global
+// `print` implementation, effectively turning debug logs into no-ops in
+// production. When compiling with the `DEBUG` flag, this local function is
+// not defined and Swift will resolve to the standard library `print`.
+#if !DEBUG
+private func print(_ items: Any..., separator: String = " ", terminator: String = "\n") {}
+#endif
+
 class AuthService: ObservableObject {
     static let shared = AuthService()
     @Published var user: UserProfile?
@@ -49,6 +58,8 @@ class AuthService: ObservableObject {
         faceIDEnabled: Bool = false,
         avatarSeed: String = "defaultseed",   // DiceBear
         avatarStyle: String = "adventurer",   // DiceBear
+        countryCode: String = CurrencyManager.deviceCountryAndCurrencyDefaults().country,
+        currencyCode: String = CurrencyManager.deviceCountryAndCurrencyDefaults().currency,
         onProfileCreated: (() -> Void)? = nil
     ) {
         isCreatingUserProfile = true
@@ -80,7 +91,9 @@ class AuthService: ObservableObject {
                 notificationsEnabled: notificationsEnabled,
                 faceIDEnabled: faceIDEnabled,
                 avatarSeed: avatarSeed,
-                avatarStyle: avatarStyle
+                avatarStyle: avatarStyle,
+                countryCode: countryCode,
+                currencyCode: currencyCode
             ) { created in
                 DispatchQueue.main.async {
                     self.isCreatingUserProfile = false
@@ -260,10 +273,12 @@ class AuthService: ObservableObject {
         faceIDEnabled: Bool = false,
         avatarSeed: String = "defaultseed",
         avatarStyle: String = "adventurer",
+        countryCode: String = CurrencyManager.deviceCountryAndCurrencyDefaults().country,
+        currencyCode: String = CurrencyManager.deviceCountryAndCurrencyDefaults().currency,
         completion: ((Bool) -> Void)? = nil
     ) {
         let uid = authUser.uid
-        let userDoc: [String: Any] = [
+        var userDoc: [String: Any] = [
             "uid": uid,
             "name": name,
             "email": authUser.email ?? "",
@@ -284,6 +299,10 @@ class AuthService: ObservableObject {
             "lastActivityAt": FieldValue.serverTimestamp(),
             "platform": "iOS"
         ]
+
+        // Persist the user's country and currency codes for multi‑device syncing.
+        userDoc["countryCode"] = countryCode
+        userDoc["currencyCode"] = currencyCode
         db.collection("users").document(uid).setData(userDoc) { err in
             if let err = err {
                 print("Failed to create user document: \(err.localizedDescription)")
@@ -311,12 +330,39 @@ class AuthService: ObservableObject {
                 return
             }
             guard let data = snapshot?.data() else {
-                print("No Firestore user document found for uid \(uid)")
-                DispatchQueue.main.async {
-                    self.user = nil
-                    self.isAuthenticated = false
-                    FriendsViewModel.shared.currentUser = nil
-                    FriendsViewModel.shared.friends = []
+                // ✅ Recovery path: user is authenticated in FirebaseAuth but their Firestore
+                // profile doc is missing (common after project migrations or older test accounts).
+                // Without this, the app sets currentUser=nil and everything (groups, expenses,
+                // token saving) breaks.
+                print("No Firestore user document found for uid \(uid). Creating a minimal profile...")
+                self.ensureUserDocumentExists(uid: uid) { createdProfile in
+                    guard let createdProfile else {
+                        DispatchQueue.main.async {
+                            self.user = nil
+                            self.isAuthenticated = false
+                            FriendsViewModel.shared.currentUser = nil
+                            FriendsViewModel.shared.friends = []
+                        }
+                        return
+                    }
+
+                    DispatchQueue.main.async {
+                        self.user = createdProfile
+                        self.isAuthenticated = true
+                        self.isEmailVerified = createdProfile.emailVerified
+
+                        let minimal = User(
+                            id: createdProfile.uid,
+                            name: createdProfile.name,
+                            email: createdProfile.email,
+                            avatar: createdProfile.avatar,
+                            avatarSeed: createdProfile.avatarSeed,
+                            avatarStyle: createdProfile.avatarStyle
+                        )
+
+                        FriendsViewModel.shared.currentUser = minimal
+                        FriendsViewModel.shared.fetchFriends()
+                    }
                 }
                 return
             }
@@ -339,6 +385,50 @@ class AuthService: ObservableObject {
                 FriendsViewModel.shared.currentUser = minimal
                 FriendsViewModel.shared.fetchFriends()
             }
+        }
+    }
+
+    /// Creates a minimal user profile document if it doesn't exist.
+    /// This keeps the app functional (groups, expenses, push tokens) for older/test accounts.
+    private func ensureUserDocumentExists(uid: String, completion: @escaping (UserProfile?) -> Void) {
+        guard let authUser = Auth.auth().currentUser else {
+            completion(nil)
+            return
+        }
+
+        let defaults = CurrencyManager.deviceCountryAndCurrencyDefaults()
+        let countryCode = defaults.country
+        let currencyCode = defaults.currency
+
+        let email = authUser.email ?? ""
+        let nameGuess: String = {
+            if let displayName = authUser.displayName, !displayName.isEmpty { return displayName }
+            if let beforeAt = email.split(separator: "@").first { return String(beforeAt) }
+            return "User"
+        }()
+
+        // Keep avatar values optional; app can later let user customize.
+        let doc: [String: Any] = [
+            "uid": uid,
+            "name": nameGuess,
+            "email": email,
+            "createdAt": FieldValue.serverTimestamp(),
+            "countryCode": countryCode,
+            "currencyCode": currencyCode
+        ]
+
+        db.collection("users").document(uid).setData(doc, merge: true) { err in
+            if let err = err {
+                print("❌ Failed to create missing user doc: \(err.localizedDescription)")
+                completion(nil)
+                return
+            }
+
+            // Construct the in-memory profile consistent with `decodeUserProfile` defaults.
+            var profile = UserProfile(uid: uid, name: nameGuess, email: email)
+            profile.countryCode = countryCode
+            profile.currencyCode = currencyCode
+            completion(profile)
         }
     }
 
@@ -427,7 +517,45 @@ class AuthService: ObservableObject {
         }
     }
 
+    // MARK: - Currency Settings
+    /// Updates the authenticated user's locale preferences both locally and in Firestore.
+    ///
+    /// - Parameters:
+    ///   - countryCode: Two‑letter ISO country code (e.g. "US").
+    ///   - currencyCode: Three‑letter ISO currency code (e.g. "USD").
+    func updateCurrency(countryCode: String, currencyCode: String) {
+        guard let uid = user?.uid else { return }
+        let normalizedCountry = countryCode.uppercased()
+        let normalizedCurrency = currencyCode.uppercased()
+        // Update Firestore document
+        db.collection("users").document(uid).updateData([
+            "countryCode": normalizedCountry,
+            "currencyCode": normalizedCurrency
+        ]) { error in
+            if let error = error {
+                print("Failed to update currency: \(error.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    // Update local user profile fields
+                    self.user?.countryCode = normalizedCountry
+                    self.user?.currencyCode = normalizedCurrency
+                    // Propagate changes to CurrencyManager
+                    CurrencyManager.shared.update(countryCode: normalizedCountry, currencyCode: normalizedCurrency)
+                }
+            }
+        }
+    }
+
     private func decodeUserProfile(from data: [String: Any]) -> UserProfile {
+        // Derive locale/currency codes from Firestore, falling back to device defaults.
+        let defaults = CurrencyManager.deviceCountryAndCurrencyDefaults()
+        let fallbackCountry = defaults.country
+        let fallbackCurrency = defaults.currency
+        let countryCode = (data["countryCode"] as? String)?.uppercased() ?? fallbackCountry
+        let currencyCode = (data["currencyCode"] as? String)?.uppercased() ?? fallbackCurrency
+        // Update the CurrencyManager so UI reflects the persisted preference.
+        CurrencyManager.shared.update(countryCode: countryCode, currencyCode: currencyCode)
+
         return UserProfile(
             uid: data["uid"] as? String ?? "",
             name: data["name"] as? String ?? "",
@@ -449,7 +577,9 @@ class AuthService: ObservableObject {
             settings: data["settings"] as? [String: Bool] ?? [:],
             deleted: data["deleted"] as? Bool ?? false,
             lastActivityAt: (data["lastActivityAt"] as? Timestamp)?.dateValue() ?? Date(),
-            platform: data["platform"] as? String ?? "iOS"
+            platform: data["platform"] as? String ?? "iOS",
+            countryCode: countryCode,
+            currencyCode: currencyCode
         )
     }
 

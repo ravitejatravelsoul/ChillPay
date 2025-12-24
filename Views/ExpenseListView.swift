@@ -4,6 +4,7 @@ struct ExpenseListView: View {
     @ObservedObject var groupVM: GroupViewModel
     @EnvironmentObject var friendsVM: FriendsViewModel
     @State var group: Group
+    @ObservedObject private var currencyManager = CurrencyManager.shared
 
     @State private var showAddExpense = false
     @State private var editingExpense: Expense?
@@ -30,8 +31,9 @@ struct ExpenseListView: View {
                                         .foregroundColor(ChillTheme.darkText)
 
                                     // Amount line
-                                    let amountString = String(format: "%.2f", expense.amount)
-                                    Text("Amount: \(group.currency.symbol)\(amountString)")
+                                    // Format the amount using the group's currency
+                                    let formatted = currencyManager.format(amount: expense.amount, in: group.currency)
+                                    Text("Amount: \(formatted)")
                                         .foregroundColor(ChillTheme.darkText)
 
                                     // Category line
